@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>TradingView Chart</title>
+  <script src="https://unpkg.com/lightweight-charts@4.1.0/dist/lightweight-charts.standalone.production.js"></script>
+  <style>
+    #chart-controls {
+      margin-bottom: 10px;
+    }
+    button {
+      margin-right: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div id="chart-controls">
+    <button id="toggle-type">Switch to Line Chart</button>
+    <button id="toggle-visibility">Hide Chart</button>
+    <button id="reset-zoom">Reset Zoom</button>
+  </div>
+
+  <div id="chart" style="width: 800px; height: 400px;"></div>
+  <script src="{{ url_for('static', filename='chart.js') }}"></script>
+</body>
+</html>

@@ -1,0 +1,46 @@
+config:
+  year: 2024             # Global override — now lives in config
+  vehicles: [my_car]     # Picked from the `vehicles` section
+  people: [alice, bob]   # Picked from the `people` section
+  time_series: [ts1]
+
+  csv_intake: "csv\\csv_backtest\\formatted_btc_usd_patch.csv"
+
+time_series:
+  ts1:
+    class: core.time_series.TimeSeries
+    params:
+      start_time: "2024-01-01 00:00:00"
+      end_time: "2024-01-01 12:00:00"
+      candle_size: "15m"
+
+vehicles:
+  my_car:
+    class: factories.test_classes.Car
+    params:
+      make: Toyota
+      model: Camry
+      year: 2015  # will be overridden by config.year
+
+  my_truck:
+    class: factories.test_classes.Car
+    params:
+      make: Ford
+      model: F-150
+
+people:
+  alice:
+    class: factories.test_classes.Person
+    params:
+      name: Alice
+      age: 30
+      car: my_car
+
+  bob:
+    class: factories.test_classes.Person
+    params:
+      name: Bob
+      age: 40
+      car: my_truck
+
+
