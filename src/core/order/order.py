@@ -1,29 +1,12 @@
 from decimal import Decimal
+from order.order_classes import OrderPlaced
+from order.order_classes import OrderExecution
+
+from utils.calc import quantize
 
 import logging
 from log.logger import LOGGER_NAME
 logger = logging.getLogger(LOGGER_NAME)
-
-class OrderExecution:
-    def __init__(
-        self,
-        execution_time: str,
-        execution_market_price: Decimal,
-        execution_dollar_amount: Decimal,
-        execution_coin_amount: Decimal,
-        fee: Decimal,
-        time_to_execute: float,  # e.g., seconds
-        execution_price_difference: Decimal,
-        execution_price_difference_percent: Decimal,
-    ):
-        self.execution_time = execution_time
-        self.execution_market_price = execution_market_price
-        self.execution_dollar_amount = execution_dollar_amount
-        self.execution_coin_amount = execution_coin_amount
-        self.fee = fee
-        self.time_to_execute = time_to_execute
-        self.execution_price_difference = execution_price_difference
-        self.execution_price_difference_percent = execution_price_difference_percent
 
 class Order:
     def __init__(
@@ -50,6 +33,9 @@ class Order:
         self.old_limit_order_numbers = [] # limit order history tracking
         self.allow_limit_adjust: bool = True #Want the option to sell immediately or turn off for testing
 
+        '''Order placed - set to None until order placed'''
+        self.placed = None
+
         '''Order execution - set to None until executed'''
         self.execution = None
 
@@ -63,6 +49,9 @@ class Order:
 
         ''' Parameter check'''
         self._validate_order_fields()
+
+        '''To be filled following '''
+        results_string = None
 
     def _validate_order_fields(self):
         valid_types = {"MARKET", "LIMIT"}
@@ -91,7 +80,7 @@ class Order:
         
 
     '''check if holdings allow trade. #Market order uses market price'''
-    def _validate_holdings(self, current_price: Decimal, USD_holdings: Decimal, coin_holdings: Decimal, state_obj) -> bool:
+    def _validate_holdings(self, current_price: Decimal, USD_holdings: Decimal, coin_holdings: Decimal, exg_state) -> bool:
         # Determine trade value in USD
         if self.order_type == "MARKET":
             USD_trade_value = self.order_coin_amount * current_price
@@ -107,7 +96,7 @@ class Order:
             else:
                 logger.error(
                     f"Validate holdings failed for BUY: USD holdings {USD_holdings} < "
-                    f"required trade value {USD_trade_value} at {state_obj.get_current_datetime()}"
+                    f"required trade value {USD_trade_value} at {exg_state.get_current_datetime()}"
                 )
                 raise ValueError("Insufficient USD holdings for BUY order.")
 
@@ -117,21 +106,21 @@ class Order:
             else:
                 logger.error(
                     f"Validate holdings failed for SELL: coin holdings {coin_holdings} < "
-                    f"order coin amount {self.order_coin_amount} at {state_obj.get_current_datetime()}"
+                    f"order coin amount {self.order_coin_amount} at {exg_state.get_current_datetime()}"
                 )
                 raise ValueError("Insufficient coin holdings for SELL order.")
 
         return False
 
-    def check_if_valid_order(self, current_price, USD_holdings, coin_holdings, state_obj):
+    def check_if_valid_order(self, current_price, USD_holdings, coin_holdings, exg_state):
         return (
-            self._validate_holdings(current_price, USD_holdings, coin_holdings, state_obj)
-            and self._validate_market_conditions(current_price, state_obj)
+            self._validate_holdings(current_price, USD_holdings, coin_holdings, exg_state)
+            and self._validate_market_conditions(current_price, exg_state)
         )
         
 
     '''Validate if market conditions allow for placing the order'''
-    def _validate_market_conditions(self, current_price: Decimal, state_obj) -> bool:
+    def _validate_market_conditions(self, current_price: Decimal, exg_state) -> bool:
         if self.order_type == "MARKET":
             return True
 
@@ -144,13 +133,13 @@ class Order:
         logger.error(
             f"Market condition validation failed for Order #{self.order_number}.\n"
             f"\tLimit Price: ${self.limit_price:.2f}, Current Price: ${current_price:.2f}\n"
-            f"\tType: {self.order_type}, Side: {self.order_side}, Time: {state_obj.get_current_datetime()}"
+            f"\tType: {self.order_type}, Side: {self.order_side}, Time: {exg_state.get_current_datetime()}"
         )
         return False
 
         
     '''Check if the order is currently executable based on market conditions.'''
-    def order_is_executable(self, current_price: Decimal, state_obj) -> bool:
+    def order_is_executable(self, current_price: Decimal, exg_state) -> bool:
         if self.order_type == "MARKET":
             return True
         
@@ -159,7 +148,7 @@ class Order:
             f"\tCurrent Market Price: ${round(current_price, 2)}\n"
             f"\tLimit Price: ${round(self.limit_price, 2)}\n"
             f"\tOrder Type: {self.order_type}, Side: {self.order_side}\n"
-            f"\tCurrent Time: {state_obj.get_current_datetime()}"
+            f"\tCurrent Time: {exg_state.get_current_datetime()}"
         )
 
         if self.order_side == "BUY" and current_price > self.limit_price:
@@ -172,7 +161,7 @@ class Order:
 
         return True
 
-    def hold_funds(self, state_obj):
+    def hold_funds(self, exg_state):
         """
         Gemini holds the fee in USD for BUY orders (fee added to the hold).
         For SELL orders, only the coin amount is held and the fee is subtracted on sell execution.
@@ -182,20 +171,20 @@ class Order:
             if self.order_type == "LIMIT":
                 USD_hold = self.limit_price * self.order_coin_amount
             else:  # MARKET order
-                USD_hold = state_obj.current_price * self.order_coin_amount
+                USD_hold = exg_state.current_price * self.order_coin_amount
 
             fee = USD_hold * self.fee_percentage
             self.USD_hold = USD_hold + fee
 
             logger.info(
                 f"Holding funds for BUY order #{self.order_number} -> "
-                f"USD_hold: ${utils.quantize(USD_hold)}, "
-                f"Expected Fee: ${utils.quantize(fee)}, "
-                f"Total Hold: ${utils.quantize(self.USD_hold)}"
+                f"USD_hold: ${quantize(USD_hold)}, "
+                f"Expected Fee: ${quantize(fee)}, "
+                f"Total Hold: ${quantize(self.USD_hold)}"
             )
 
             # Update USD holdings in state (subtract held funds)
-            state_obj.update_USD_holdings(-self.USD_hold)
+            exg_state.update_USD_holdings(-self.USD_hold)
 
         elif self.order_side == "SELL":
             self.coin_hold = self.order_coin_amount
@@ -206,16 +195,46 @@ class Order:
             )
 
             # Update coin holdings in state (subtract held coins)
-            state_obj.update_coin_holdings(-self.order_coin_amount)
+            exg_state.update_coin_holdings(-self.order_coin_amount)
 
-    def restore_funds(self, state_obj):
+    def restore_funds(self, exg_state):
         if self.order_side == "BUY":
-            state_obj.update_USD_holdings(self.USD_hold)
+            exg_state.update_USD_holdings(self.USD_hold)
             self.USD_hold = Decimal(0)
 
         elif self.order_side == "SELL":
-            state_obj.update_coin_holdings(self.coin_hold)
+            exg_state.update_coin_holdings(self.coin_hold)
             self.coin_hold = Decimal(0)
+
+    def set_order_placed(self,         
+            timestamp: float,
+            datetime: str,
+            market_price: Decimal
+    ):
+        self.placed = OrderPlaced(timestamp, datetime, market_price)
+
+    def set_order_execution(self,
+        timestamp: float,
+        datetime: str,
+        market_price: Decimal,
+        dollar_amount: Decimal,
+        coin_amount: Decimal,
+        fee: Decimal,
+        time_to_execute: float,
+        price_difference: Decimal,
+        price_difference_percent: Decimal,
+    ):
+        self.execution = OrderExecution(
+            timestamp,
+            datetime,
+            market_price,
+            dollar_amount,
+            coin_amount,
+            fee,
+            time_to_execute,
+            price_difference,
+            price_difference_percent,
+        )
 
 
     def order_string(self) -> str:

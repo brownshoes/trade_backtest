@@ -27,8 +27,8 @@ def intake_csv_data(csv_file: str, start_time: str, end_time: str) -> tuple[pd.D
     df = df[(df['Timestamp'] >= start_unix) & (df['Timestamp'] <= end_unix)]
 
     if df.empty:
-        logger.warning("No data found in the specified time range.")
-        return None
+        logger.error(f"No data found in the specified time range: {start_time} <-> {end_time}")
+        raise ValueError(f"No data found in the specified time range: {start_time} <-> {end_time}")
 
     # Logging first and last row information
     first_row = df.iloc[0]

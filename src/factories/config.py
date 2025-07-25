@@ -1,29 +1,65 @@
 from datetime import datetime
 
-from utils.time_conversion import START_END_TIME_FORMAT
-import logging
+from core.exchange_state import State
+from core.time_series import TimeSeries
+from core.order.order_completion import order_completion_factory
+from core.clients.client_factory import client_factory
 
-logger = logging.getLogger(__name__)
+from utils.time_conversion import START_END_TIME_FORMAT
+
+
+import logging
+from log.logger import LOGGER_NAME
+logger = logging.getLogger(LOGGER_NAME)
 
 
 class Config:
-    def __init__(self, mode, start_time, end_time, vehicles, people, time_series, **extra_fields):
-        self.mode = mode
+    def __init__(
+        self,
+        mode: str,
+        start_time,
+        end_time,
+        USD_holdings: float,
+        coin_holdings: float,
+        maker_fee: float,
+        taker_fee: float,
+        time_series,
+        **extra_fields
+    ):
+        self.mode = mode.upper()
         self.start_time = start_time
         self.end_time = end_time
-        self.vehicles = vehicles
-        self.people = people
-        self.time_series = time_series
+        self.USD_holdings = USD_holdings
+        self.coin_holdings = coin_holdings
+        self.maker_fee = maker_fee
+        self.taker_fee = taker_fee
+        self.extra_fields = extra_fields
 
-        # Dynamically assign any extra config-only fields
+        self.state_obj = State(
+            self.USD_holdings,
+            self.coin_holdings,
+            self.maker_fee,
+            self.taker_fee
+        )
+
+        self.time_series = self.init_time_series(time_series)
+        self.client = self.init_client(self.mode)
+
+        # Dynamically set any extra config fields
         for key, value in extra_fields.items():
             setattr(self, key, value)
 
         self.checks()
 
+    def init_time_series(self, time_series_size):
+        return [TimeSeries(candle_size=x) for x in time_series_size]
+
+    def init_client(self, mode):
+        order_completion = order_completion_factory(mode)
+        return client_factory(mode, self.state_obj, None, order_completion)
 
     def checks(self):
-        # Validate datetime formats
+        # Validate datetime format
         try:
             datetime.strptime(self.start_time, START_END_TIME_FORMAT)
             datetime.strptime(self.end_time, START_END_TIME_FORMAT)
@@ -42,7 +78,7 @@ class Config:
             raise TypeError(msg)
 
         # Validate mode
-        valid_modes = {"backtest", "live"}
+        valid_modes = {"BACKTEST", "LIVE"}
         if self.mode not in valid_modes:
             msg = f"Invalid mode '{self.mode}'. Must be one of: {valid_modes}"
             logger.error(msg)

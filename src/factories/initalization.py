@@ -26,7 +26,7 @@ def create_directories():
 
 
 def load_csv(config):
-    if config.mode == "backtest":
+    if config.mode == "BACKTEST":
         bufferd_start_time = get_buffered_start_time(config.start_time, config.time_series)
         logger.info(f"Buffered start time: {bufferd_start_time}")
         df, list_of_dict = intake_csv_data(config.csv_input_file, bufferd_start_time, config.end_time)

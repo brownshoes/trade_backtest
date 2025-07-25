@@ -2,7 +2,7 @@ import logging
 from log.logger import LOGGER_NAME
 logger = logging.getLogger(LOGGER_NAME)
 
-from utils.time_conversion import timestamp_to_string
+from utils.time_conversion import timestamp_to_datetime
 from utils.candle import create_empty_candle, Candle
 from utils.calc import most_recent_complete_timestamp
 
@@ -12,8 +12,6 @@ class TimeSeries:
         self.candle_size = self._parse_candle_size(candle_size) # In minutes
         self.candle_size_seconds = self.candle_size * 60 # used for unix timestamp calculations
 
-
-    def initialize(self):
         self.df = None
         self.candle_list_dict = []
 
@@ -24,7 +22,6 @@ class TimeSeries:
 
         self.time_series_index = 0 
 
-
     def update_series(self, namedtuple_candle):
         if self.last_timestamp is None:
             self.last_timestamp = namedtuple_candle.Timestamp
@@ -33,7 +30,7 @@ class TimeSeries:
 
         # Missing candles
         if(self.last_timestamp + self.candle_tick < update_timestamp):
-            logger.error("Missing candles from " + timestamp_to_string(self.last_timestamp + self.candle_tick) + " -> " + timestamp_to_string(update_timestamp - self.candle_tick))
+            logger.error("Missing candles from " + timestamp_to_datetime(self.last_timestamp + self.candle_tick) + " -> " + timestamp_to_string(update_timestamp - self.candle_tick))
 
             while(self.last_timestamp + self.candle_tick < update_timestamp):
                 self.last_timestamp = self.last_timestamp + self.candle_tick
@@ -114,7 +111,7 @@ class TimeSeries:
 
     def _merge_candles(self, filtered_list):
         timestamp = most_recent_complete_timestamp(filtered_list[0].Timestamp, self.candle_size_seconds)
-        datetime = timestamp_to_string(timestamp)
+        datetime = timestamp_to_datetime(timestamp)
 
         open_price = float(filtered_list[0].Open)
         close_price = float(filtered_list[-1].Close)
