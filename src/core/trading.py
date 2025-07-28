@@ -21,11 +21,11 @@ class Trading:
 
     def execute_trading_strategy(self, exg_state, time_series_updated_list):
         self._execute_buy_logic(exg_state, time_series_updated_list)
-        #self._execute_sell_logic(exg_state, time_series_updated_list)
+        self._execute_sell_logic(exg_state, time_series_updated_list)
 
     def check_open_orders_for_completion(self, exg_state):
         self._check_open_buy_orders(exg_state)
-        #self._check_open_sell_orders(exg_state)
+        self._check_open_sell_orders(exg_state)
 
     def _check_open_buy_orders(self, exg_state):
         completed_buy_orders = self.placeBuy.check_and_complete_all_buy_orders(exg_state)
@@ -33,12 +33,12 @@ class Trading:
         for executed_buy_order in completed_buy_orders:
             self._open_position(executed_buy_order, exg_state)
 
-    # def _check_open_sell_orders(self, exg_state):
-    #     completed_sell_orders = self.placeSell.check_and_complete_all_sell_orders(exg_state)
+    def _check_open_sell_orders(self, exg_state):
+        completed_sell_orders = self.placeSell.check_and_complete_all_sell_orders(exg_state)
 
-    #     for order_num, open_position in list(self.trading_state.open_positions.items()):
-    #         if open_position.percent_sold >= 0.999:
-    #             self._close_position(open_position, exg_state)
+        for order_num, open_position in list(self.trading_state.open_positions.items()):
+            if open_position.percent_sold >= 0.999:
+                self._close_position(open_position, exg_state)
 
     def _open_position(self, executed_buy_order, state_obj):
         open_position = OpenPosition(executed_buy_order)

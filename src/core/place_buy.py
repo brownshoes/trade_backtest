@@ -88,7 +88,7 @@ class PlaceBuy:
         )
 
     '''Check if buy order executed.'''
-    def check_open_buy_orders(self, exg_state):
+    def check_and_complete_all_buy_orders(self, exg_state):
         completed_buy_orders = []
 
         # Use list() to allow safe deletion while iterating
