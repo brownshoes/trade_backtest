@@ -55,7 +55,7 @@ class Trading:
             return 
 
         buy_order = self.strategies_buy.create_buy_order(identified_entries, self.trading_state, exg_state)
-        result = self.placeBuy.place_buy_order(buy_order, exg_state)
+        result = self._place_buy_order.place_buy_order(buy_order, exg_state)
 
         # Retry logic if initial placement fails (live mode)
         if self.mode == "live" and result is False:
@@ -69,6 +69,119 @@ class Trading:
         if result and self.placeBuy._is_buy_order_executed(exg_state, buy_order):
             self.placeBuy.complete_buy_order(exg_state, buy_order)
             self._open_position(buy_order, exg_state)
+
+    def _execute_sell_logic(self, exg_state, time_series_updated_list) -> bool:
+        """
+        Sell everything if strategy indicates, otherwise check if individual positions should close.
+        First, attempt to cancel any open positions. Then, place new sell orders for the rest.
+        """
+        positions_to_close = self.strategy.exit_positions(self.trading_state, exg_state, time_series_updated_list)
+        success = True
+        valid_positions = {}
+
+        if self.trade:
+            # Step 1: Cancel any existing sells that were placed by a strategy_exit for this open_position
+            for open_position, exits in positions_to_close.items():
+                if open_position.is_locked:
+                    cancel_result = self.placeSell.cancel_sell_order(open_position.sell_order, exg_state)
+                    if not cancel_result:
+                        logger.error(
+                            f"Failed to cancel open sell order: {open_position.sell_order.order_string()} "
+                            f"for buy_order: {open_position.buy_order.order_string()}"
+                        )
+                        success = False
+                        continue
+                # Either unlocked or successfully cancelled
+                valid_positions[open_position] = exits
+
+            # Step 2: Process sell logic for positions we can act on
+            for open_position, exits in valid_positions.items():
+                sell_order = self.strategies_sell.create_sell_order(open_position, exits, self.trading_state, exg_state)
+                result = self._place_sell_order(sell_order, exg_state, open_position)
+
+                # Retry logic in live mode
+                if self.mode == "live" and result is False:
+                    logger.error("Sell order failed to place. Attempting retries.")
+                    result = self.placeSell.place_sell_with_retries(
+                        original_order=sell_order,
+                        open_position=open_position,
+                        strategies_sell=self.strategies_sell,
+                        exits=exits,
+                        exg_state=exg_state,
+                        mode=self.mode
+                    )
+                    if not result:
+                        logger.error("Sell retries FAILED. Order not placed!")
+                        success = False
+                        continue
+
+                # Check if the sell was executed immediately
+                if result and self.placeSell.check_if_sell_order_executed(exg_state, sell_order):
+                    self._check_open_sell_orders(exg_state)
+
+        return success
+    
+    def _execute_strategy_exit(self, open_position, state_obj):
+        if(self.strategies_exit != None and self.trade):
+            logger.info("Executing Strategy Exit")
+            sell_order = self.strategies_exit.create_sell_order(open_position, state_obj)   
+
+            self.placeSell.place_sell_order(sell_order, state_obj, open_position)
+
+            result = self._place_sell_order(sell_order, state_obj, open_position)
+
+    def _place_buy_order(self, buy_order, exg_state):
+        current_datetime = exg_state.get_current_datetime()
+        current_price = exg_state.current_price
+    
+        if buy_order is None:
+            logger.error(f"Buy order failed to be created | Time: {current_datetime}")
+            return False
+
+        logger.info(
+            f"Buy order created: {buy_order.order_string()} | Time: {current_datetime} | "
+            f"Market Price: ${current_price:.2f}"
+        )
+
+        exg_state.log_portfolio()
+
+        result = self.placeBuy.place_buy_order(buy_order, exg_state)
+
+        if not result:
+            logger.error(f"Buy order failed to place: {buy_order.order_string()} Time: {current_datetime}")
+
+        return result
+
+    def _place_sell_order(self, sell_order, exg_state, open_position):
+        current_datetime = exg_state.get_current_datetime()
+        current_price = exg_state.current_price
+
+        if open_position.is_locked:
+            existing_sell_order  = self.trading_state.open_sell_orders[open_position.sell_order.order_number]
+            logger.error(
+                f"Sell order already placed for Open Position\n"
+                f"Position: {open_position.position_status_string(current_price)}\n"
+                f"Sell order: {existing_sell_order .order_string()} | "
+                f"Placed Time: {existing_sell_order.datetime}"
+            )
+            return False
+        
+        if sell_order is None:
+            logger.error(f"Sell order failed to be created | Time: {current_datetime}")
+            return False
+
+        logger.info(
+            f"Sell order created: {sell_order.order_string()} | Time: {current_datetime} | "
+            f"Market Price: ${current_price:.2f}"
+        )
+        exg_state.log_portfolio()
+
+        result = self.placeSell.place_sell(sell_order, exg_state, open_position)
+
+        if(result == False):
+            logger.error(f"Sell order failed to place: {sell_order.order_string()} Time: {current_datetime}")
+
+        return result
 
     def log_trading(self):
         trading_string = (

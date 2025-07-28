@@ -16,18 +16,6 @@ class PlaceBuy:
         current_datetime = exg_state.get_current_datetime()
         current_price = exg_state.current_price
 
-        # TODO MOVE TO trading
-        if buy_order is None:
-            logger.error(f"Buy order failed to be created | Time: {current_datetime}")
-            return False
-
-        # TODO MOVE TO trading
-        logger.info(
-            f"Buy order created: {buy_order.order_string()} | Time: {current_datetime} | "
-            f"Market Price: ${current_price:.2f}"
-        )
-        exg_state.log_portfolio()
-
         if self.client.place_order(buy_order):
             buy_order.set_order_placed(exg_state.current_timestamp, current_datetime, current_price)
             self.trading_state.open_buy_orders[buy_order.order_number] = buy_order
@@ -56,7 +44,7 @@ class PlaceBuy:
                 buy_order.creation_timestamp = original_order.creation_timestamp
                 buy_order.initial_limit_price = original_order.initial_limit_price
 
-                if self.place_buy(buy_order, exg_state, exg_state.current_timestamp):
+                if self.place_buy(buy_order, exg_state):
                     return True
 
             except Exception as e:
