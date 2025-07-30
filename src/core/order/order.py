@@ -51,7 +51,7 @@ class Order:
         self._validate_order_fields()
 
         '''To be filled following '''
-        results_string = None
+        result_string = None
 
     def _validate_order_fields(self):
         valid_types = {"MARKET", "LIMIT"}

@@ -1,6 +1,9 @@
 from core.place_buy import PlaceBuy
 from core.place_sell import PlaceSell
 
+from core.positions import OpenPosition
+from core.positions import ClosedPosition
+
 import logging
 from log.logger import LOGGER_NAME
 logger = logging.getLogger(LOGGER_NAME)
@@ -31,7 +34,9 @@ class Trading:
         completed_buy_orders = self.placeBuy.check_and_complete_all_buy_orders(exg_state)
 
         for executed_buy_order in completed_buy_orders:
-            self._open_position(executed_buy_order, exg_state)
+            open_position = self._open_position(executed_buy_order, exg_state)
+
+            self._execute_strategy_exit(open_position, exg_state)
 
     def _check_open_sell_orders(self, exg_state):
         completed_sell_orders = self.placeSell.check_and_complete_all_sell_orders(exg_state)
@@ -40,12 +45,24 @@ class Trading:
             if open_position.percent_sold >= 0.999:
                 self._close_position(open_position, exg_state)
 
-    def _open_position(self, executed_buy_order, state_obj):
+    def _open_position(self, executed_buy_order):
         open_position = OpenPosition(executed_buy_order)
         self.trading_state.open_positions[executed_buy_order.order_number] = open_position
-        self._plot_open_close_position("green", state_obj)
 
-        self._execute_strategy_exit(open_position, state_obj)
+
+    def _close_position(self, open_position, state_obj):
+        del self.trading_state.open_positions[open_position.buy_info.order_number]
+
+        closed_position = ClosedPosition(open_position)
+        self.trading_state.closed_positions.append(ClosedPosition(open_position))
+
+        statistics = Statistics(self.trading_state, state_obj.current_price, state_obj.get_current_datetime())
+
+        logger.info("\n Position Summary\n" + open_position.position_results_string() + "\n")
+        logger.info(closed_position.closed_position_results_string())
+        statistics.log_statistics_result_string()
+
+        self._plot_open_close_position("red", state_obj)
 
     '''Only executes one buy order per cycle'''
     def _execute_buy_logic(self, exg_state, time_series_updated_list):
@@ -79,56 +96,57 @@ class Trading:
         success = True
         valid_positions = {}
 
-        if self.trade:
-            # Step 1: Cancel any existing sells that were placed by a strategy_exit for this open_position
-            for open_position, exits in positions_to_close.items():
-                if open_position.is_locked:
-                    cancel_result = self.placeSell.cancel_sell_order(open_position.sell_order, exg_state)
-                    if not cancel_result:
-                        logger.error(
-                            f"Failed to cancel open sell order: {open_position.sell_order.order_string()} "
-                            f"for buy_order: {open_position.buy_order.order_string()}"
-                        )
-                        success = False
-                        continue
-                # Either unlocked or successfully cancelled
-                valid_positions[open_position] = exits
+        if not self.trade:
+            return success
 
-            # Step 2: Process sell logic for positions we can act on
-            for open_position, exits in valid_positions.items():
-                sell_order = self.strategies_sell.create_sell_order(open_position, exits, self.trading_state, exg_state)
-                result = self._place_sell_order(sell_order, exg_state, open_position)
+        # Step 1: Cancel any existing sells that were placed by a strategy_exit for this open_position
+        for open_position, exits in positions_to_close.items():
+            if open_position.is_locked:
+                cancel_result = self.placeSell.cancel_sell_order(open_position.sell_order, exg_state)
 
-                # Retry logic in live mode
-                if self.mode == "live" and result is False:
-                    logger.error("Sell order failed to place. Attempting retries.")
-                    result = self.placeSell.place_sell_with_retries(
-                        original_order=sell_order,
-                        open_position=open_position,
-                        strategies_sell=self.strategies_sell,
-                        exits=exits,
-                        exg_state=exg_state,
-                        mode=self.mode
+                if not cancel_result:
+                    logger.error(
+                        f"Failed to cancel open sell order: {open_position.sell_order.order_string()} "
+                        f"for buy_order: {open_position.buy_order.order_string()}"
                     )
-                    if not result:
-                        logger.error("Sell retries FAILED. Order not placed!")
-                        success = False
-                        continue
+                    success = False
+                    continue
+            # Either unlocked or successfully cancelled
+            valid_positions[open_position] = exits
 
-                # Check if the sell was executed immediately
-                if result and self.placeSell.check_if_sell_order_executed(exg_state, sell_order):
-                    self._check_open_sell_orders(exg_state)
+        # Step 2: Process sell logic for positions we can act on
+        for open_position, exits in valid_positions.items():
+            sell_order = self.strategies_sell.create_sell_order(open_position, exits, self.trading_state, exg_state)
+            result = self._place_sell_order(sell_order, exg_state, open_position)
+
+            # Retry logic in live mode
+            if self.mode == "live" and result is False:
+                logger.error("Sell order failed to place. Attempting retries.")
+                result = self.placeSell.place_sell_with_retries(
+                    original_order=sell_order,
+                    open_position=open_position,
+                    strategies_sell=self.strategies_sell,
+                    exits=exits,
+                    exg_state=exg_state,
+                    mode=self.mode
+                )
+                if not result:
+                    logger.error("Sell retries FAILED. Order not placed!")
+                    success = False
+                    continue
+
+            # Check if the sell was executed immediately
+            if result and self.placeSell.check_if_sell_order_executed(exg_state, sell_order):
+                self._check_open_sell_orders(exg_state)
 
         return success
     
-    def _execute_strategy_exit(self, open_position, state_obj):
+    def _execute_strategy_exit(self, open_position, exg_state):
         if(self.strategies_exit != None and self.trade):
             logger.info("Executing Strategy Exit")
-            sell_order = self.strategies_exit.create_sell_order(open_position, state_obj)   
+            sell_order = self.strategies_exit.create_sell_order(open_position, exg_state)   
 
-            self.placeSell.place_sell_order(sell_order, state_obj, open_position)
-
-            result = self._place_sell_order(sell_order, state_obj, open_position)
+            self.placeSell.place_sell_order(sell_order, exg_state, open_position)
 
     def _place_buy_order(self, buy_order, exg_state):
         current_datetime = exg_state.get_current_datetime()

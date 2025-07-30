@@ -6,6 +6,12 @@ class TradingState:
         self.open_buy_orders = {}
         self.open_sell_orders = {}
 
+    def get_open_position_by_sell_order(self, sell_order):
+        for position in self.open_positions.values():
+            if position.placed_sell_order.order_number == sell_order.order_number:
+                return position
+        return None
+
     def get_string_positions_closed(self):
         result_string = ""
         for closed_position in self.closed_positions:
