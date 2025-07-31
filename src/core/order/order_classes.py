@@ -31,5 +31,5 @@ class OrderExecution:
         self.coin_amount = coin_amount
         self.fee = fee
         self.time_to_execute = time_to_execute
-        self.price_difference = price_difference
+        self.price_difference = price_difference #Slipage
         self.price_difference_percent = price_difference_percent
