@@ -1,41 +1,49 @@
-'''wrapper class that contains the state of the current trading environment'''
+from decimal import Decimal
+
+from core.positions import OpenPosition, ClosedPosition, TradeOverview
+
 class TradingState:
     def __init__(self):
-        self.open_positions = {}
-        self.closed_positions = [] # list to preserve order of when position closed
-        self.open_buy_orders = {}
-        self.open_sell_orders = {}
+        self.open_positions: dict[str, OpenPosition] = {}
+        self.closed_positions: list[ClosedPosition] = []
 
-    def get_open_position_by_sell_order(self, sell_order):
-        for position in self.open_positions.values():
-            if position.placed_sell_order.order_number == sell_order.order_number:
-                return position
-        return None
+        self.open_buy_orders: dict[str, TradeOverview] = {}
+        self.open_sell_orders: dict[str, TradeOverview] = {}
 
-    def get_string_positions_closed(self):
-        result_string = ""
-        for closed_position in self.closed_positions:
-            result_string += closed_position.position.position_results_string()
-        return result_string
+        self.cumulative_pnl = Decimal(0)
+        self.max_equity = Decimal(0)
+        self.max_drawdown = Decimal(0)
+        self.max_drawdown_percent = Decimal(0)
 
-    def get_string_positions_open(self):
-        result_string = ""
-        for open_position in self.open_positions:
-            result_string += open_position.position_results_string()
-        return result_string
+        self.equity_log: list[dict] = []
 
-    def open_orders_status(self):
-        result_string = "Open Orders: #" + str(len(self.open_buy_orders) + len(self.open_sell_orders))
-        for order_num, buy_info in self.open_buy_orders.items():
-            result_string += "\n" + buy_info.order.order_string() + " " + str(buy_info.placed_time)
+    def add_closed_position(self, closed_position: 'ClosedPosition'):
+        self.closed_positions.append(closed_position)
 
-        for order_num, sell_info in self.open_sell_orders.items():
-            result_string += "\n" + sell_info.order.order_string() + " " + str(sell_info.placed_time)
+        pnl = closed_position.profit_and_loss
+        self.cumulative_pnl += pnl
 
-        return result_string
+        # Update max equity
+        if self.cumulative_pnl > self.max_equity:
+            self.max_equity = self.cumulative_pnl
 
-    def open_positions_status(self, current_price):
-        result_string = "Open Positions: #" + str(len(self.open_positions))
-        for order_num, open_position in self.open_positions.items():
-            result_string += "\n " + open_position.position_status_string(current_price)
-        return result_string
+        # Calculate drawdown from peak
+        drawdown = self.max_equity - self.cumulative_pnl
+        drawdown_pct = (
+            (drawdown / self.max_equity) * Decimal(100)
+            if self.max_equity > 0 else Decimal(0)
+        )
+
+        # Update max drawdown if worse
+        self.max_drawdown = max(self.max_drawdown, drawdown)
+        self.max_drawdown_percent = max(self.max_drawdown_percent, drawdown_pct)
+
+        # Record snapshot
+        self.equity_log.append({
+            "trade_num": len(self.closed_positions),
+            "timestamp": closed_position.close_datetime,
+            "pnl": pnl,
+            "cumulative_pnl": self.cumulative_pnl,
+            "max_drawdown": self.max_drawdown,
+            "max_drawdown_percent": self.max_drawdown_percent
+        })

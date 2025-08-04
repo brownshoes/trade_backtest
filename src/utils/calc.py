@@ -11,8 +11,8 @@ def percent_change(y_val: Number, y_val_prev: Number) -> float:
         raise ValueError("y_val_prev cannot be zero for percent change calculation")
     return ((y_val - y_val_prev) * 100) / y_val_prev
 
-'''Ex: 15 is 75% of 20'''
-def portion_of_percent(part: Number, whole: Number) -> float:
+'''Ex: 15 is 75% of 20, or what percent of 20 is 15'''
+def what_percent_is(part: Number, whole: Number) -> float:
     if whole == 0:
         raise ValueError("whole cannot be zero for portion calculation")
     return (part / whole) * 100
