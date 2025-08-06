@@ -5,10 +5,10 @@ from core.position_tracking.open_position import OpenPosition
 from core.position_tracking.trade_data import TradeOverview
 
 class ClosedPosition:
-    def __init__(self, open_position: 'OpenPosition', sell_trade_overviews: list['TradeOverview']):
+    def __init__(self, open_position: 'OpenPosition'):
         self.open_position = open_position
         self.entry_trade = open_position.buy_trade_overview
-        self.sell_trades = sorted(sell_trade_overviews, key=lambda t: t.executed_datetime)
+        self.sell_trades = sorted(open_position.sell_trade_overviews, key=lambda t: t.executed_datetime)
 
         # Combine all trades (entry + exits) chronologically
         self.all_trades = sorted([self.entry_trade] + self.sell_trades, key=lambda t: t.executed_datetime)

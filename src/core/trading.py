@@ -3,6 +3,7 @@ from core.place_sell import PlaceSell
 
 from core.position_tracking.open_position import OpenPosition
 from core.position_tracking.closed_position import ClosedPosition
+from core.position_tracking.trade_data import TradeOverview, TradeResult
 
 
 import logging
@@ -45,18 +46,10 @@ class Trading:
         sell_trade_overviews = self.placeSell.check_and_complete_all_sell_orders(exg_state)
 
         for sell_trade_overview in sell_trade_overviews:
+            # Record the sell in the OpenPosition
             open_position = self.trading_state.get_position_by_sell_order_number(sell_trade_overview.order_number)
-            trade_result = TradeResult(trade_overview, open_position)
+            trade_result = open_position.record_sell()
             logger.info(trade_result)
-        
-            open_position.unlock()
-
-        for order_num, open_position in list(self.trading_state.open_positions.items()):
-            if open_position.percent_sold >= 0.999:
-                self._close_position(open_position, exg_state)
-
-    def _check_open_sell_orders(self, exg_state):
-        completed_sell_orders = self.placeSell.check_and_complete_all_sell_orders(exg_state)
 
         for order_num, open_position in list(self.trading_state.open_positions.items()):
             if open_position.percent_sold >= 0.999:
