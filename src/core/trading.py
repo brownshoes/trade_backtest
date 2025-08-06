@@ -1,8 +1,9 @@
 from core.place_buy import PlaceBuy
 from core.place_sell import PlaceSell
 
-from core.positions import OpenPosition
-from core.positions import ClosedPosition
+from core.position_tracking.open_position import OpenPosition
+from core.position_tracking.closed_position import ClosedPosition
+
 
 import logging
 from log.logger import LOGGER_NAME
@@ -20,6 +21,8 @@ class Trading:
         self.placeBuy = PlaceBuy(trading_state, client)
         self.placeSell = PlaceSell(trading_state, client)
 
+        self.trade_num = 0
+
         self.log_trading()
 
     def execute_trading_strategy(self, exg_state, time_series_updated_list):
@@ -31,12 +34,26 @@ class Trading:
         self._check_open_sell_orders(exg_state)
 
     def _check_open_buy_orders(self, exg_state):
-        completed_buy_orders = self.placeBuy.check_and_complete_all_buy_orders(exg_state)
+        buy_trade_overviews = self.placeBuy.check_and_complete_all_buy_orders(exg_state)
 
-        for executed_buy_order in completed_buy_orders:
-            open_position = self._open_position(executed_buy_order, exg_state)
+        for trade_overview_buy in buy_trade_overviews:
+            open_position = self._open_position(trade_overview_buy, exg_state)
 
             self._execute_strategy_exit(open_position, exg_state)
+
+    def _check_open_sell_orders(self, exg_state):
+        sell_trade_overviews = self.placeSell.check_and_complete_all_sell_orders(exg_state)
+
+        for sell_trade_overview in sell_trade_overviews:
+            open_position = self.trading_state.get_position_by_sell_order_number(sell_trade_overview.order_number)
+            trade_result = TradeResult(trade_overview, open_position)
+            logger.info(trade_result)
+        
+            open_position.unlock()
+
+        for order_num, open_position in list(self.trading_state.open_positions.items()):
+            if open_position.percent_sold >= 0.999:
+                self._close_position(open_position, exg_state)
 
     def _check_open_sell_orders(self, exg_state):
         completed_sell_orders = self.placeSell.check_and_complete_all_sell_orders(exg_state)
@@ -45,9 +62,10 @@ class Trading:
             if open_position.percent_sold >= 0.999:
                 self._close_position(open_position, exg_state)
 
-    def _open_position(self, executed_buy_order):
-        open_position = OpenPosition(executed_buy_order)
-        self.trading_state.open_positions[executed_buy_order.order_number] = open_position
+    def _open_position(self, trade_overview_buy):
+        self.trade_num += 1
+        open_position = OpenPosition(trade_overview_buy, self.trade_num)
+        self.trading_state.open_positions[trade_overview_buy.order_number] = open_position
 
 
     def _close_position(self, open_position, state_obj):

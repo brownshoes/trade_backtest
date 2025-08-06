@@ -14,7 +14,7 @@ class Order:
         order_number: int,
         order_type: str,       # "MARKET" or "LIMIT""
         order_side: str,       # "BUY" or "SELL"
-        order_coin_amount: Decimal,
+        quantity: Decimal,
         fee_percentage: Decimal,
         creation_timestamp: str,
         limit_price: Decimal = None
@@ -23,7 +23,7 @@ class Order:
         self.order_number = order_number
         self.order_type = order_type
         self.order_side = order_side
-        self.order_coin_amount = order_coin_amount
+        self.quantity = quantity
         self.fee_percentage = fee_percentage
         self.creation_timestamp = creation_timestamp
 
@@ -50,9 +50,6 @@ class Order:
         ''' Parameter check'''
         self._validate_order_fields()
 
-        '''To be filled following '''
-        result_string = None
-
     def _validate_order_fields(self):
         valid_types = {"MARKET", "LIMIT"}
         valid_sides = {"BUY", "SELL"}
@@ -66,12 +63,12 @@ class Order:
             raise ValueError(f"Invalid order_side: '{self.order_side}'.")
 
         # Validate coin amount
-        if not isinstance(self.order_coin_amount, Decimal):
-            raise TypeError("order_coin_amount must be a Decimal.")
+        if not isinstance(self.quantity, Decimal):
+            raise TypeError("quantity must be a Decimal.")
 
-        if not self.order_coin_amount.is_finite() or self.order_coin_amount <= 0:
+        if not self.quantity.is_finite() or self.quantity <= 0:
             raise ValueError(
-                f"Invalid order_coin_amount: {self.order_coin_amount}. Must be > 0 and finite."
+                f"Invalid quantity: {self.quantity}. Must be > 0 and finite."
             )
 
         # Validate required price fields for LIMIT
@@ -83,9 +80,9 @@ class Order:
     def _validate_holdings(self, current_price: Decimal, USD_holdings: Decimal, coin_holdings: Decimal, exg_state) -> bool:
         # Determine trade value in USD
         if self.order_type == "MARKET":
-            USD_trade_value = self.order_coin_amount * current_price
+            USD_trade_value = self.quantity * current_price
         else:
-            USD_trade_value = self.order_coin_amount * self.limit_price
+            USD_trade_value = self.quantity * self.limit_price
 
         # Quantize for consistent precision (e.g., 9 decimal places)
         USD_trade_value = USD_trade_value.quantize(Decimal('1.000000000'))
@@ -101,12 +98,12 @@ class Order:
                 raise ValueError("Insufficient USD holdings for BUY order.")
 
         elif self.order_side == "SELL":
-            if coin_holdings >= self.order_coin_amount:
+            if coin_holdings >= self.quantity:
                 return True
             else:
                 logger.error(
                     f"Validate holdings failed for SELL: coin holdings {coin_holdings} < "
-                    f"order coin amount {self.order_coin_amount} at {exg_state.get_current_datetime()}"
+                    f"order coin amount {self.quantity} at {exg_state.get_current_datetime()}"
                 )
                 raise ValueError("Insufficient coin holdings for SELL order.")
 
@@ -169,9 +166,9 @@ class Order:
         if self.order_side == "BUY":
             # Calculate USD to hold based on order type
             if self.order_type == "LIMIT":
-                USD_hold = self.limit_price * self.order_coin_amount
+                USD_hold = self.limit_price * self.quantity
             else:  # MARKET order
-                USD_hold = exg_state.current_price * self.order_coin_amount
+                USD_hold = exg_state.current_price * self.quantity
 
             fee = USD_hold * self.fee_percentage
             self.USD_hold = USD_hold + fee
@@ -187,7 +184,7 @@ class Order:
             exg_state.update_USD_holdings(-self.USD_hold)
 
         elif self.order_side == "SELL":
-            self.coin_hold = self.order_coin_amount
+            self.coin_hold = self.quantity
 
             logger.info(
                 f"Holding funds for SELL order #{self.order_number} -> "
@@ -195,7 +192,7 @@ class Order:
             )
 
             # Update coin holdings in state (subtract held coins)
-            exg_state.update_coin_holdings(-self.order_coin_amount)
+            exg_state.update_coin_holdings(-self.quantity)
 
     def restore_funds(self, exg_state):
         if self.order_side == "BUY":
@@ -242,7 +239,7 @@ class Order:
             f"# {self.order_number} "
             f"{self.order_type} "
             f"{self.order_side} "
-            f"{self.order_coin_amount:.8f}"
+            f"{self.quantity:.8f}"
         )
 
         if self.limit_price is not None:

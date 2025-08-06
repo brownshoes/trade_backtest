@@ -1,6 +1,9 @@
 from decimal import Decimal
 
-from core.positions import OpenPosition, ClosedPosition, TradeOverview
+from core.position_tracking.closed_position import ClosedPosition
+from core.position_tracking.open_position import OpenPosition
+from core.position_tracking.trade_data import TradeOverview
+
 
 class TradingState:
     def __init__(self):
@@ -16,6 +19,13 @@ class TradingState:
         self.max_drawdown_percent = Decimal(0)
 
         self.equity_log: list[dict] = []
+
+    def get_position_by_sell_order_number(self, order_number: str) -> 'OpenPosition | None':
+        for position in self.open_positions.values():
+            if position.placed_sell_order is not None:
+                if position.placed_sell_order.order_number == order_number:
+                    return position
+        return None
 
     def add_closed_position(self, closed_position: 'ClosedPosition'):
         self.closed_positions.append(closed_position)

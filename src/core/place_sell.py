@@ -1,6 +1,7 @@
 from decimal import Decimal
 import time
 
+from core.position_tracking.trade_data import TradeOverview, TradeResult
 from utils.calc import percent_change
 
 import logging
@@ -88,7 +89,7 @@ class PlaceSell:
         return True
 
     def _is_sell_order_executed(self, exg_state, order_number: str) -> bool:
-        """Check if a buy order has been executed and is still open."""
+        """Check if a sell order has been executed and is still open."""
         return (
             order_number in exg_state.fulfilled_orders and
             order_number in self.trading_state.open_sell_orders
@@ -96,28 +97,23 @@ class PlaceSell:
 
     '''Check if sell order executed.'''
     def check_and_complete_all_sell_orders(self, exg_state):
-        completed_sell_orders = []
+        trade_overviews = []
 
         # Use list() to allow safe deletion while iterating
         for order_number, sell_order in list(self.trading_state.open_sell_orders.items()):
             if self._is_sell_order_executed(exg_state, order_number):
-                self.complete_sell_order(exg_state, sell_order)
-                completed_sell_orders.append(sell_order)
+                trade_overview = self.complete_sell_order(exg_state, sell_order)
+                trade_overviews.append(trade_overview)
 
-        return completed_sell_orders
+        return trade_overviews
 
     def complete_sell_order(self, exg_state, sell_order):
-        open_position = self.trading_state.get_open_position_by_sell_order(sell_order)
-
-        '''open_position needs to be updated first since the sell debug string contains information about the open_position.'''
-        open_position.record_sell(sell_order)
-        sell_order.result_string = self._completed_sell_result_string(sell_order, exg_state, open_position)
         del self.trading_state.open_sell_orders[sell_order.order_number]
-        open_position.unlock()
 
-        logger.info(self._executed_sell_debug_string(sell_order))
-
+        trade_overview = TradeOverview(sell_order)
+        logger.info(trade_overview)
         
+        return trade_overview
 
     def _generate_sell_debug_string(self, exg_state, sell_order, open_position) -> str:
         debug_string = (
@@ -130,70 +126,3 @@ class PlaceSell:
             f"\n-----------------------------------------------------------"
         )
         return debug_string
-    
-    def _executed_sell_debug_string(self, sell_order):
-        debug_string = (
-            f"\n #{sell_order.order_number} SELL EXECUTED ->"
-            f"\n\t Placed Time: {sell_order.placed.datetime}"
-            f"\n\t Placed Price: ${sell_order.placed.market_price:.2f}"
-            f"\n Executed: ->"
-            f"\n\t Time: {sell_order.execution.datetime}"
-            f"\n\t Market Price: ${sell_order.execution.market_price:.2f}"
-            f"\n\t USD: ${sell_order.execution.dollar_amount:.2f}"
-            f"\n\t Coin: {sell_order.execution.coin_amount:.8f}"
-            f"\n\t Fee: {sell_order.execution.fee:.8f}"
-            f"\n\t Time To Execute: {sell_order.execution.time_to_execute} sec"
-            f"\n\t Slippage: {sell_order.execution.price_difference:.2f} %"
-            f"{sell_order.execution.price_difference_percent:.2f}"
-            "\n-----------------------------------------------------------"
-        )
-        return debug_string
-
-    
-    '''
-    Example:
-    BUY: .1 coin @ 1000 = $100
-    SELL: 25% of BUY @ $1015
-        - %25 of .1 = .025          (.25 * .1 = .025)
-        - .025 of $1015 = $25.375   (.025 * $1015 = $25.375)
-    USD Outcome:
-        SELL $ amount - (BUY $ Amount * % of BUY SOLD)
-        Ex: $25.375 - ($100 * .25) = 0.375
-    '''
-    def _calculate_usd_outcome(self, buy_order, sell_order, percent_of_buy_sold):
-        usd_outcome = Decimal(sell_order.execution.dollar_amount) - (
-            Decimal(buy_order.execution.dollar_amount) * Decimal(percent_of_buy_sold)
-        )
-        return usd_outcome
-    
-    def _completed_sell_result_string(self, sell_order, exg_state, open_position):
-        percent_sold = Decimal(sell_order.execution.coin_amount) / Decimal(open_position.buy_order.execution.coin_amount) * 100
-        usd_outcome = self._calculate_usd_outcome(open_position.buy_order, sell_order, percent_sold / 100)
-        percent_outcome = percent_change(
-            sell_order.execution.market_price,
-            open_position.buy_order.execution.market_price
-        )
-        total_position_percent_sold = open_position.percent_sold * 100
-        
-        result_string = "\n----------------------------------------------------"
-        result_string += f"\n*Sell #: {open_position.times_sold}  ${usd_outcome:.2f}  % {percent_outcome:.2f}"
-        result_string += f"\n*SELL Placed -> Time: {sell_order.placed.datetime}  MARKET: ${sell_order.placed.market_price:.2f}"
-        result_string += f"\n*Executed: -> Time: {sell_order.execution.datetime}  MARKET: ${sell_order.execution.market_price:.2f}"
-        result_string += (
-            f"\n*Trade: ${sell_order.execution.dollar_amount:.2f}  <->  "
-            f"Coin: {sell_order.execution.coin_amount:.8f}  Fee: ${sell_order.execution.fee:.2f}"
-        )
-        result_string += f"\n*Percent sold: %{percent_sold:.2f}  Total Position Sold: %{total_position_percent_sold:.2f}"
-        result_string += (
-            f"\n*Portfolio: ${exg_state.current_portfolio_value():.2f}  ->  "
-            f"USD: ${exg_state.get_USD_holdings_with_holds():.2f}  "
-            f"Coin: {exg_state.get_coin_holdings_with_holds():.2f}"
-        )
-        result_string += f"\n*DateTime: {exg_state.get_current_datetime()}"
-        result_string += f"\n*Time To Execute: {sell_order.execution.time_to_execute} sec"
-        result_string += (
-            f"\n*Slippage: {sell_order.execution.price_difference:.2f} "
-            f"%{sell_order.execution.price_difference_percent:.2f}"
-        )
-
-        return result_string

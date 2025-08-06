@@ -1,5 +1,7 @@
 import time
 
+from core.position_tracking.trade_data import TradeOverview
+
 import logging
 from log.logger import LOGGER_NAME
 logger = logging.getLogger(LOGGER_NAME)
@@ -89,21 +91,23 @@ class PlaceBuy:
 
     '''Check if buy order executed.'''
     def check_and_complete_all_buy_orders(self, exg_state):
-        completed_buy_orders = []
+        trade_overviews = []
 
         # Use list() to allow safe deletion while iterating
         for order_number, buy_order in list(self.trading_state.open_buy_orders.items()):
             if self._is_buy_order_executed(exg_state, order_number):
-                self.complete_buy_order(exg_state, buy_order)
-                completed_buy_orders.append(buy_order)
+                trade_overview = self.complete_buy_order(buy_order)
+                trade_overviews.append(trade_overview)
 
-        return completed_buy_orders
+        return trade_overviews
 
-    def complete_buy_order(self, exg_state, buy_order):
-        buy_order.result_string = self._completed_buy_result_string(exg_state, buy_order)
+    def complete_buy_order(self, buy_order):
         del self.trading_state.open_buy_orders[buy_order.order_number]
 
-        logger.info(self._executed_buy_debug_string(exg_state, buy_order))
+        trade_overview = TradeOverview(buy_order)
+        logger.info(trade_overview)
+
+        return trade_overview
 
 
     def _generate_buy_debug_string(self, exg_state, buy_order):
@@ -112,44 +116,7 @@ class PlaceBuy:
             f"\n\tOrder Type: {buy_order.order_type}"
             f"\n\tTime: {exg_state.get_current_datetime()}"
             f"\n\tMarket Price: ${exg_state.current_price:.2f}"
-            f"\n\tCoin Amount: {buy_order.order_coin_amount:.8f}"
+            f"\n\tCoin Amount: {buy_order.order_quantity:.8f}"
             f"\n\tPortfolio Value: ${exg_state.current_portfolio_value():.2f}"
         )
-
-    def _executed_buy_debug_string(self, buy_order) -> str:
-        debug_string = (
-            f"\n BUY EXECUTED -> {buy_order.order_string()}"
-            f"\n\t Placed Time: {buy_order.placed.datetime}"
-            f"\n\t Placed Price: ${buy_order.placed.market_price:.2f}"
-            f"\n Executed: ->"
-            f"\n\t Time: {buy_order.execution.datetime}"
-            f"\n\t Market Price: ${buy_order.execution.market_price:.2f}"
-            f"\n\t USD: ${buy_order.execution.dollar_amount:.2f}"
-            f"\n\t Coin: {buy_order.execution.coin_amount:.8f}"
-            f"\n\t Fee: {buy_order.fee:.8f}"
-            f"\n\t Time To Execute: {buy_order.execution.time_to_execute:.2f} sec"
-            f"\n\t Slippage: ${buy_order.execution.price_difference:.2f} "
-            f"({buy_order.execution.price_difference_percent:.2f}%)"
-            f"\n-----------------------------------------------------------"
-        )
-        return debug_string
-
-    def _completed_buy_result_string(self, exg_state, buy_order):
-        portfolio_value = exg_state.current_portfolio_value()
-        usd_holdings = exg_state.get_USD_holdings_with_holds()
-        coin_holdings = exg_state.get_coin_holdings_with_holds()
-        current_time = exg_state.get_current_datetime()
-
-        result_string = (
-            "\n\n\n*****************************************************"
-            f"\n*#{buy_order.order_number} BUY placed -> Time: {buy_order.placed.datetime}  Market: ${buy_order.placed.market_price:.2f}"
-            f"\n*Executed: -> Time: {buy_order.execution.datetime}  Market: ${buy_order.execution.market_price:.2f}"
-            f"\n*Trade: ${buy_order.execution.dollar_amount:.2f}  <->  Coin: {buy_order.execution.coin_amount:.8f}  Fee: ${buy_order.fee:.2f}"
-            f"\n*Portfolio: ${portfolio_value:.2f}  ->  USD: ${usd_holdings:.2f}  Coin: {coin_holdings:.2f}"
-            f"\n*DateTime: {current_time}"
-            f"\n* Time To Execute: {buy_order.execution.time_to_execute} sec"
-            f"\n* Slippage: {buy_order.execution.price_difference:.2f} %  ({buy_order.execution.price_difference_percent:.2f}%)"
-        )
-
-        return result_string
 

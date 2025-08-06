@@ -28,7 +28,7 @@ class BacktestCompletion(OrderCompletion):
         order.restore_funds(exg_state)
 
         #Calculate fee for market and stop orders
-        fee = order.order_coin_amount * current_price * order.fee_percentage
+        fee = order.quantity * current_price * order.fee_percentage
 
         '''If this is a limit buy, then we want to execute on the limit price, not the current market price'''
         execution_price = (
@@ -36,12 +36,12 @@ class BacktestCompletion(OrderCompletion):
         )
 
         if order.order_side == "BUY":
-            USD_change = 0 - (order.order_coin_amount * execution_price + fee)
-            coin_change = order.order_coin_amount
+            USD_change = 0 - (order.quantity * execution_price + fee)
+            coin_change = order.quantity
 
         elif order.order_side == "SELL":
-            USD_change = (order.order_coin_amount * execution_price) - fee
-            coin_change = 0 - order.order_coin_amount
+            USD_change = (order.quantity * execution_price) - fee
+            coin_change = 0 - order.quantity
 
         # Update holdings on the state object
         exg_state.update_USD_holdings(USD_change)
