@@ -73,12 +73,22 @@ class Statistics:
         # Trade-by-trade log (overview)
         self.overview = self.trading_state.equity_log
 
-    def _avg_bars(self, trades):
+    def _avg_bars(self, trades) -> float:
+        """
+        Calculates the average number of bars (candles) each trade lasted.
+        self.candle_size is an integer representing candle duration in minutes.
+        """
         if not trades:
-            return 0
+            return 0.0
+
+        candle_seconds = self.candle_size * 60  # convert minutes to seconds
+        if candle_seconds == 0:
+            return 0.0
+
         total_seconds = sum(p.position_duration.total_seconds() for p in trades)
         avg_duration = total_seconds / len(trades)
-        return avg_duration / self.candle_size.total_seconds()
+        return round(avg_duration / candle_seconds, 2)
+
     
 
     def _calculate_sharpe_ratio(self):

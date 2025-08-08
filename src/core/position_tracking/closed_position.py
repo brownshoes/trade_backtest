@@ -32,6 +32,8 @@ class ClosedPosition:
         self.run_up, self.run_up_pct = self.calculate_run_up()
         self.drawdown, self.drawdown_pct = self.calculate_drawdown()
 
+        self.cumulative_profit_and_loss = None
+
     def calculate_total_fees(self) -> Decimal:
         return sum((t.fee or Decimal(0)) for t in self.all_trades)
 
@@ -78,5 +80,6 @@ class ClosedPosition:
             f"💸 Total Fees       : ${self.fees:.2f}\n\n"
             f"📈 Max Run-up       : ${self.run_up:.2f} ({self.run_up_pct:.2f}%)\n"
             f"📉 Max Drawdown     : ${self.drawdown:.2f} ({self.drawdown_pct:.2f}%)\n"
+            f"📊 Cumulative P&L   : ${self.cumulative_profit_and_loss:.2f}\n"
             f"{'-'*40}"
         )

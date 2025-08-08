@@ -26,12 +26,17 @@ class TradingState:
                 if position.placed_sell_order.order_number == order_number:
                     return position
         return None
+    
+    def add_open_position(self, open_position: 'OpenPosition'):
+        self.open_positions[open_position.trade_overview_buy.order_number] = open_position
 
     def add_closed_position(self, closed_position: 'ClosedPosition'):
+        del self.open_positions[closed_position.open_position.trade_overview_buy.order_number]
         self.closed_positions.append(closed_position)
 
         pnl = closed_position.profit_and_loss
         self.cumulative_pnl += pnl
+        closed_position.cumulative_profit_and_loss = self.cumulative_pnl
 
         # Update max equity
         if self.cumulative_pnl > self.max_equity:

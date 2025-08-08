@@ -3,7 +3,7 @@ from core.place_sell import PlaceSell
 
 from core.position_tracking.open_position import OpenPosition
 from core.position_tracking.closed_position import ClosedPosition
-from core.position_tracking.trade_data import TradeOverview, TradeResult
+from core.position_tracking.statistics import Statistics
 
 
 import logging
@@ -11,11 +11,13 @@ from log.logger import LOGGER_NAME
 logger = logging.getLogger(LOGGER_NAME)
 
 class Trading:
-    def __init__(self, mode, trading_state, client, strategies_buy, strategies_sell, strategies_exit=None, trade=False):
+    def __init__(self, mode, trading_state, client, strategies_buy, strategies_sell, 
+                 stats_candle_size=15,strategies_exit=None, trade=False):
         self.mode = mode
         self.trading_state = trading_state
         self.strategies_buy = strategies_buy
         self.strategies_sell = strategies_sell
+        self.stats_candle_size = stats_candle_size
         self.strategies_exit = strategies_exit
         self.trade = trade
 
@@ -58,22 +60,17 @@ class Trading:
     def _open_position(self, trade_overview_buy):
         self.trade_num += 1
         open_position = OpenPosition(trade_overview_buy, self.trade_num)
-        self.trading_state.open_positions[trade_overview_buy.order_number] = open_position
+        self.trading_state.add_open_position(open_position)
 
 
-    def _close_position(self, open_position, state_obj):
-        del self.trading_state.open_positions[open_position.buy_info.order_number]
-
+    def _close_position(self, open_position):
         closed_position = ClosedPosition(open_position)
-        self.trading_state.closed_positions.append(ClosedPosition(open_position))
+        self.trading_state.add_closed_position(ClosedPosition(open_position))
 
-        statistics = Statistics(self.trading_state, state_obj.current_price, state_obj.get_current_datetime())
+        statistics = Statistics(self.trading_state, self.stats_candle_size)
 
-        logger.info("\n Position Summary\n" + open_position.position_results_string() + "\n")
-        logger.info(closed_position.closed_position_results_string())
-        statistics.log_statistics_result_string()
-
-        self._plot_open_close_position("red", state_obj)
+        logger.info(closed_position.summary())
+        logger.info(statistics.summary_string_color())
 
     '''Only executes one buy order per cycle'''
     def _execute_buy_logic(self, exg_state, time_series_updated_list):

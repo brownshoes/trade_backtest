@@ -1,6 +1,8 @@
 from datetime import datetime
 
-from core.exchange_state import State
+from core.exchange_state import ExchangeState
+from core.position_tracking.trading_state import TradingState
+from core.trading import Trading
 from core.time_series import TimeSeries
 from core.order.order_completion import order_completion_factory
 from core.clients.client_factory import client_factory
@@ -17,6 +19,7 @@ class Config:
     def __init__(
         self,
         mode: str,
+        trade,
         start_time,
         end_time,
         USD_holdings: float,
@@ -24,26 +27,44 @@ class Config:
         maker_fee: float,
         taker_fee: float,
         time_series,
+        main_time_series,
+        indicators,
+        strategies_buy,
+        strategies_sell,
+        strategies_exit,
         **extra_fields
     ):
         self.mode = mode.upper()
+        self.trade = trade
         self.start_time = start_time
         self.end_time = end_time
         self.USD_holdings = USD_holdings
         self.coin_holdings = coin_holdings
         self.maker_fee = maker_fee
         self.taker_fee = taker_fee
+
+        self.indicators = indicators
+
+        self.strategies_buy = strategies_buy
+        self.strategies_sell = strategies_sell
+        self.strategies_exit = strategies_exit
+
         self.extra_fields = extra_fields
 
-        self.state_obj = State(
+        self.exg_state = ExchangeState(
             self.USD_holdings,
             self.coin_holdings,
             self.maker_fee,
             self.taker_fee
         )
 
+        self.trading_state = TradingState()
+
         self.time_series = self.init_time_series(time_series)
         self.client = self.init_client(self.mode)
+
+        self.trading = Trading(self.mode, self.trading_state, self.client, self.strategies_buy, self.strategies_sell, 
+                 main_time_series.candle_size, self.strategies_exit, self.trade)
 
         # Dynamically set any extra config fields
         for key, value in extra_fields.items():
@@ -56,7 +77,7 @@ class Config:
 
     def init_client(self, mode):
         order_completion = order_completion_factory(mode)
-        return client_factory(mode, self.state_obj, None, order_completion)
+        return client_factory(mode, self.exg_state, None, order_completion)
 
     def checks(self):
         # Validate datetime format

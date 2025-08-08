@@ -6,13 +6,13 @@ from log.logger import LOGGER_NAME
 logger = logging.getLogger(LOGGER_NAME)
 
 class BacktestClient(Client):
-    def __init__(self, state_obj, order_completion, client_api=None):
-        self.state_obj = state_obj
+    def __init__(self, exg_state, order_completion, client_api=None):
+        self.exg_state = exg_state
         self.order_completion = order_completion
         self.client_api = client_api
 
     def place_order(self, order: Order) -> bool:
-        s = self.state_obj  # shorthand for readability
+        s = self.exg_state  # shorthand for readability
 
         if not order.check_if_valid_order(s.current_price, s.USD_holdings, s.coin_holdings, s):
             logger.error(f"Unable to place order. Order invalid: {order.order_string()}")
@@ -31,7 +31,7 @@ class BacktestClient(Client):
         return True
 
     def check_orders_for_execution(self):
-        s = self.state_obj  # shorthand for readability
+        s = self.exg_state  # shorthand for readability
 
         executable_orders = []
         for order_number, order in self.order_book.items():
@@ -46,7 +46,7 @@ class BacktestClient(Client):
         return executable_orders
 
     def fulfill_order(self, order: Order):
-        s = self.state_obj  # shorthand for readability
+        s = self.exg_state  # shorthand for readability
 
         logger.info(f"Order filled: {order.order_string()} Time: {s.get_current_datetime()}")
 
@@ -54,7 +54,7 @@ class BacktestClient(Client):
         del s.order_book[order.order_number]
 
     def cancel_order(self, order: Order):
-        s = self.state_obj  # shorthand for readability
+        s = self.exg_state  # shorthand for readability
 
         if order.order_number not in s.order_book:
             logger.error(f"Cancel Error: Order not in order book: {order.order_string()} Time: {s.get_current_datetime()}")

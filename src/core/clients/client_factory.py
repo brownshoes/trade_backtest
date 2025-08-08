@@ -2,7 +2,7 @@ from core.clients.backtest_client import BacktestClient
 from core.clients.gemini_client import GeminiClient
 from core.clients.client import Client
 
-def client_factory(client_name: str, state_obj, order_completion, client_api=None) -> Client:
+def client_factory(client_name: str, exg_state, order_completion, client_api=None) -> Client:
     clients = {
         "GEMINI": GeminiClient,
         "BACKTEST": BacktestClient,
@@ -13,7 +13,7 @@ def client_factory(client_name: str, state_obj, order_completion, client_api=Non
         raise ValueError(f"No client found for exchange: {client_name}")
 
     return client_class(
-        state_obj=state_obj,
+        exg_state=exg_state,
         order_completion=order_completion,
         client_api=client_api,
     )
