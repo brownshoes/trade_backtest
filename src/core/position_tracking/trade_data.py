@@ -1,6 +1,5 @@
 from decimal import Decimal
 
-from core.position_tracking.open_position import OpenPosition
 
 class TradeOverview:
     def __init__(self, order):
@@ -39,7 +38,7 @@ class TradeOverview:
         )
 
 class TradeResult:
-    def __init__(self, sell_trade_overview: 'TradeOverview', open_position: 'OpenPosition'):
+    def __init__(self, sell_trade_overview: 'TradeOverview', open_position):
         # Core data
         self.entry_price = open_position.entry_price
         self.exit_price = sell_trade_overview.executed_market_price

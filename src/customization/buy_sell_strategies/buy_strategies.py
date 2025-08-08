@@ -10,7 +10,7 @@ logger = logging.getLogger(LOGGER_NAME)
 
 '''Limit Buy. Buy amount of coin at a set percent below current price'''
 class LimitBuyPercentEquity:
-    def __init__(self, percent_equity, percent_below_current_price):
+    def __init__(self, percent_equity=1.0, percent_below_current_price=0.01):
         self.percent_equity = Decimal(percent_equity)
         self.percent_below_current_price = Decimal(percent_below_current_price)
 

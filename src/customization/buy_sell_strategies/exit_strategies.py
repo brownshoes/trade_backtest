@@ -5,7 +5,7 @@ from core.order.order import Order
 
 '''Limit Exit. Set an exit upon a successful buy. Sell amount of coin at a set percent above market price at buy's execution time'''
 class LimitExitPercentAbove:
-    def __init__(self, percent_above_current_price):
+    def __init__(self, percent_above_current_price=1.25):
         self.percent_above_current_price = Decimal(percent_above_current_price)
 
     def create_sell_order(self, open_position, exg_state):

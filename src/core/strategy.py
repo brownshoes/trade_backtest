@@ -3,11 +3,11 @@ from log.logger import LOGGER_NAME
 logger = logging.getLogger(LOGGER_NAME)
 
 class Strategy:
-    def __init__(self, exit_time_series, trade_conditions_for_entry, trade_conditions_for_exit, identify_entry, identify_exit):
+    def __init__(self, exit_time_series, entry_trade_conditions, exit_trade_conditions, identify_entry, identify_exit):
         self.exit_time_series = exit_time_series
 
-        self.trade_conditions_for_entry = trade_conditions_for_entry
-        self.trade_conditions_for_exit = trade_conditions_for_exit
+        self.entry_trade_conditions = entry_trade_conditions
+        self.exit_trade_conditions = exit_trade_conditions
 
         self.identify_entry = identify_entry
         self.identify_exit = identify_exit
@@ -26,14 +26,14 @@ class Strategy:
                 identified_entries.append(identify)
 
         if identified_entries:
-            identified_entries = identified_entries + self.trade_conditions_for_entry
+            identified_entries = identified_entries + self.entry_trade_conditions
             logger.info(f"Entry Identified: {exg_state.get_current_datetime()} {identified_entries}")
 
         return identified_entries
     
     '''trade conditions for ENTRY is 'AND'. All conditions must be true'''
     def _trade_conditions_met_entry(self, trading_state, exg_state):
-        for condition in self.trade_conditions_for_entry:
+        for condition in self.entry_trade_conditions:
             if not condition.trade_conditions_met_for_entry(trading_state, exg_state):
                 return False
         return True
@@ -81,16 +81,16 @@ class Strategy:
                 if open_position.buy_info.order.execution_time == exg_state.current_time:
                     continue
 
-                exit_conditions = self._trade_conditions_met_exit(trading_state, exg_state, open_position, self.trade_conditions_for_exit)
+                exit_conditions = self._trade_conditions_met_exit(trading_state, exg_state, open_position, self.exit_trade_conditions)
                 if exit_conditions:
                     positions_to_close[open_position] = exit_conditions
 
         return positions_to_close
 
     '''EXIT on trade condition is 'OR'. If one condition is true, exit'''
-    def _trade_conditions_met_exit(self, trading_state, exg_state, open_position, trade_conditions_for_exit):
+    def _trade_conditions_met_exit(self, trading_state, exg_state, open_position, exit_trade_conditions):
         exit_conditions = []
-        for condition in trade_conditions_for_exit:
+        for condition in exit_trade_conditions:
             if condition.conditions_met_exit(trading_state, exg_state, open_position):
                 exit_conditions.append(condition)
         return exit_conditions

@@ -11,14 +11,14 @@ from log.logger import LOGGER_NAME
 logger = logging.getLogger(LOGGER_NAME)
 
 class Trading:
-    def __init__(self, mode, trading_state, client, strategies_buy, strategies_sell, 
-                 stats_candle_size=15,strategies_exit=None, trade=False):
+    def __init__(self, mode, trading_state, client, buy_strategy, sell_strategy, 
+                 exit_strategy=None, stats_candle_size=15, trade=False):
         self.mode = mode
         self.trading_state = trading_state
-        self.strategies_buy = strategies_buy
-        self.strategies_sell = strategies_sell
+        self.buy_strategy = buy_strategy
+        self.sell_strategy = sell_strategy
+        self.exit_strategy = exit_strategy
         self.stats_candle_size = stats_candle_size
-        self.strategies_exit = strategies_exit
         self.trade = trade
 
         self.placeBuy = PlaceBuy(trading_state, client)
@@ -79,13 +79,13 @@ class Trading:
         if not self.trade or not identified_entries:
             return 
 
-        buy_order = self.strategies_buy.create_buy_order(identified_entries, self.trading_state, exg_state)
+        buy_order = self.buy_strategy.create_buy_order(identified_entries, self.trading_state, exg_state)
         result = self._place_buy_order.place_buy_order(buy_order, exg_state)
 
         # Retry logic if initial placement fails (live mode)
         if self.mode == "live" and result is False:
             logger.error("Buy order failed to place. Attempting retries.")
-            result = self.placeBuy.place_buy_with_retries(buy_order, identified_entries, exg_state, self.strategies_buy)
+            result = self.placeBuy.place_buy_with_retries(buy_order, identified_entries, exg_state, self.buy_strategy)
             if result is False:
                 logger.error("Buy retries FAILED. Order not placed!")
                 return
@@ -124,7 +124,7 @@ class Trading:
 
         # Step 2: Process sell logic for positions we can act on
         for open_position, exits in valid_positions.items():
-            sell_order = self.strategies_sell.create_sell_order(open_position, exits, self.trading_state, exg_state)
+            sell_order = self.sell_strategy.create_sell_order(open_position, exits, self.trading_state, exg_state)
             result = self._place_sell_order(sell_order, exg_state, open_position)
 
             # Retry logic in live mode
@@ -133,7 +133,7 @@ class Trading:
                 result = self.placeSell.place_sell_with_retries(
                     original_order=sell_order,
                     open_position=open_position,
-                    strategies_sell=self.strategies_sell,
+                    sell_strategy=self.sell_strategy,
                     exits=exits,
                     exg_state=exg_state,
                     mode=self.mode
@@ -150,9 +150,9 @@ class Trading:
         return success
     
     def _execute_strategy_exit(self, open_position, exg_state):
-        if(self.strategies_exit != None and self.trade):
+        if(self.exit_strategy != None and self.trade):
             logger.info("Executing Strategy Exit")
-            sell_order = self.strategies_exit.create_sell_order(open_position, exg_state)   
+            sell_order = self.exit_strategy.create_sell_order(open_position, exg_state)   
 
             self.placeSell.place_sell_order(sell_order, exg_state, open_position)
 
@@ -213,8 +213,8 @@ class Trading:
         trading_string = (
             f"Trading Configuration:\n"
             f"\tTrading: {self.trade}\n"
-            f"\tstrategies_buy: {type(self.strategies_buy)}\n"
-            f"\tstrategies_sell: {type(self.strategies_sell)}\n"
-            f"\tstrategies_exit: {type(self.strategies_exit) if self.strategies_exit is not None else 'None'}\n"
+            f"\tbuy_strategy: {type(self.buy_strategy)}\n"
+            f"\tsell_strategy: {type(self.sell_strategy)}\n"
+            f"\texit_strategy: {type(self.exit_strategy) if self.exit_strategy is not None else 'None'}\n"
         )
         logger.info(trading_string)

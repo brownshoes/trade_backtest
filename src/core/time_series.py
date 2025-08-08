@@ -9,6 +9,7 @@ from utils.calc import most_recent_complete_timestamp
 
 class TimeSeries:
     def __init__(self, candle_size: str):
+        self.candle_size_str = candle_size
         self.candle_size = self._parse_candle_size(candle_size) # In minutes
         self.candle_size_seconds = self.candle_size * 60 # used for unix timestamp calculations
 

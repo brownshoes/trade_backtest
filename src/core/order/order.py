@@ -1,6 +1,6 @@
 from decimal import Decimal
-from order.order_classes import OrderPlaced
-from order.order_classes import OrderExecution
+from core.order.order_classes import OrderPlaced
+from core.order.order_classes import OrderExecution
 
 from utils.calc import quantize
 

@@ -1,15 +1,6 @@
 import argparse
 
-from factories.initalization import init, load_config, load_csv
-
-
-# from input.csv_input import intake_csv_data, get_buffered_start_time
-
-# from log.logger import setup_logger
-
-# import logging
-
-#logger = logging.getLogger(__name__)
+from init.initalization import init, load_config, load_csv
 
 import logging
 from log.logger import LOGGER_NAME
@@ -25,12 +16,9 @@ def main():
 
     args = parser.parse_args()
 
-    init(args.config)
+    config = init(args.config)
+    print(config)
 
-    config = load_config(args.config)
-    logger.info(config.to_string())
-
-    df, list_of_dict = load_csv(config)
 
 
 
@@ -52,5 +40,4 @@ def main():
 
 
 if __name__ == '__main__':
-    print(f"📅 Entry Time ")
-    #main()
+    main()
