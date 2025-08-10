@@ -1,9 +1,11 @@
+import pandas as pd
+
 import logging
 from log.logger import LOGGER_NAME
 logger = logging.getLogger(LOGGER_NAME)
 
 from utils.time_conversion import timestamp_to_datetime
-from utils.candle import create_empty_candle, Candle
+from utils.candle import create_empty_candle, Candle, candle_columns
 from utils.calc import most_recent_complete_timestamp
 
 
@@ -31,7 +33,10 @@ class TimeSeries:
 
         # Missing candles
         if(self.last_timestamp + self.candle_tick < update_timestamp):
-            logger.error("Missing candles from " + timestamp_to_datetime(self.last_timestamp + self.candle_tick) + " -> " + timestamp_to_string(update_timestamp - self.candle_tick))
+            logger.error(
+                f"Missing candles from {timestamp_to_datetime(self.last_timestamp + self.candle_tick)} "
+                f"to {timestamp_to_datetime(update_timestamp - self.candle_tick)}"
+            )
 
             while(self.last_timestamp + self.candle_tick < update_timestamp):
                 self.last_timestamp = self.last_timestamp + self.candle_tick
@@ -43,6 +48,10 @@ class TimeSeries:
         self.last_timestamp = namedtuple_candle.Timestamp
 
         return self._process_candle(update_timestamp)
+    
+    
+    def create_dataframe(self):
+        self.df = pd.DataFrame(self.candle_list_dict, columns = candle_columns)
     
 
     def _process_candle(self, update_timestamp):
@@ -59,7 +68,7 @@ class TimeSeries:
             
             self._error_check(filtered_buffer)
 
-            if(len(filtered_buffer) == 0):
+            if not filtered_buffer:
                 self.candle_buffer.clear()
                 return False
 
@@ -67,12 +76,6 @@ class TimeSeries:
 
             '''append the merged candle'''
             self.candle_list_dict.append(merged_candle)
-            self.close_list.append(merged_candle["Close"])
-
-            '''if we've completed all the preprocessing for the indicators, record the index. Mainly, to know where to begin plotting'''
-            if(self.completed_preprocessing_index == None and self.candle_list_dict[-1]["Timestamp"] >= self.start_unix):
-                self.completed_preprocessing_index = len(self.time_list) - 1
-
 
             self.candle_buffer.clear()
             self.first_candle = False
@@ -111,6 +114,9 @@ class TimeSeries:
 
 
     def _merge_candles(self, filtered_list):
+        if not filtered_list:
+            raise ValueError("Cannot merge empty candle list.")
+
         timestamp = most_recent_complete_timestamp(filtered_list[0].Timestamp, self.candle_size_seconds)
         datetime = timestamp_to_datetime(timestamp)
 

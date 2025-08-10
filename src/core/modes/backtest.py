@@ -1,4 +1,4 @@
-from factories.config import Config
+from init.config import Config
 from decorators.timeit import timeit
 
 import logging
@@ -9,8 +9,10 @@ class Backtest:
     def __init__(self, config: 'Config'):
         self.config = config
         self.exg_state = config.exg_state
+        self.trading_state = config.trading_state
         self.client = config.client
         self.trading = config.trading
+        self.limit_adjust = config.limit_adjust
 
     @timeit
     def execute(self, df):
@@ -31,8 +33,7 @@ class Backtest:
             # self.exg_state.update_state_pre(timestamps[i]) Why does this exist
             self.client.check_orders_for_execution()
             self.trading.check_open_orders_for_completion(self.exg_state)
-            #TODO LIMIT ADJUST
-            #self.limit_adjust.adjust_limit_orders(self.trading_strategy.placeBuy, self.trading_strategy.placeSell, self.exg_state, self.trading_strategy.strategies_buy, self.trading_strategy.strategies_sell)
+            self.limit_adjust.adjust_limit_orders(self.trading.placeBuy, self.trading.placeSell, self.exg_state, self.trading.buy_strategy, self.trading.sell_strategy)
 
 
             '''

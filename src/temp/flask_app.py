@@ -3,7 +3,7 @@ import plotly.graph_objs as go
 import pandas as pd
 from datetime import datetime
 
-from factories.initalization import init, load_config, load_csv
+from init.initalization import init, load_config, load_csv
 
 import logging
 from log.logger import LOGGER_NAME

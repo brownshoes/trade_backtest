@@ -17,7 +17,8 @@ class Order:
         quantity: Decimal,
         fee_percentage: Decimal,
         creation_timestamp: str,
-        limit_price: Decimal = None
+        limit_price: Decimal = None,
+        allow_limit_adjust: bool = False
     ):
         '''Order creation'''
         self.order_number = order_number
@@ -31,7 +32,7 @@ class Order:
         self.limit_price = limit_price
         self.initial_limit_price = limit_price
         self.old_limit_order_numbers = [] # limit order history tracking
-        self.allow_limit_adjust: bool = True #Want the option to sell immediately or turn off for testing
+        self.allow_limit_adjust: bool = allow_limit_adjust #Want the option to sell immediately or turn off for testing
 
         '''Order placed - set to None until order placed'''
         self.placed = None

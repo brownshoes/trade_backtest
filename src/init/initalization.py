@@ -3,6 +3,8 @@ import importlib
 
 from init.config import Config  
 
+from core.modes.backtest import Backtest
+
 from input.csv_input import intake_csv_data, get_buffered_start_time
 from utils.candle import Candle
 
@@ -51,6 +53,11 @@ def init_backtest_time_series(config: Config, list_of_dict: list):
         for time_series in config.time_series:
             time_series.update_series(candle)
 
+    # After filling the time_series, create/fill the dataframe
+    for time_series in config.time_series:
+        time_series.create_dataframe()
+        logger.info(time_series.df)
+
 @timeit
 def load_csv(config: Config):
     """
@@ -75,6 +82,10 @@ def backtest_init(config: Config):
     for indicator in config.indicators:
         indicator.populate()
 
+    backtest = Backtest(config)
+    backtest.execute(df)
+
+
 def init(config_module_name: str):
     """
     Entry point initialization: setup logger, directories, and load config.
@@ -82,4 +93,6 @@ def init(config_module_name: str):
     setup_logger(config_module_name)
     create_directories()
     config = load_config(config_module_name)
+    load_csv(config)
+    backtest_init(config)
     return config

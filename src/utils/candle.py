@@ -2,7 +2,9 @@ from collections import namedtuple
 
 from utils.time_conversion import timestamp_to_datetime
 
-Candle = namedtuple("Candle", ["Datetime", "Timestamp", "Open", "High", "Low", "Close", "Volume"])
+candle_columns = ["Datetime", "Timestamp", "Open", "High", "Low", "Close", "Volume"]
+
+Candle = namedtuple("Candle", candle_columns)
 
 def create_empty_candle(timestamp):
     return Candle(

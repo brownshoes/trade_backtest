@@ -15,11 +15,12 @@ class PlaceBuy:
         self.max_retries = 10
     
     def place_buy_order(self, buy_order, exg_state):
+        current_timestamp = exg_state.current_timestamp
         current_datetime = exg_state.get_current_datetime()
         current_price = exg_state.current_price
 
         if self.client.place_order(buy_order):
-            buy_order.set_order_placed(exg_state.current_timestamp, current_datetime, current_price)
+            buy_order.set_order_placed(current_timestamp, current_datetime, current_price)
             self.trading_state.open_buy_orders[buy_order.order_number] = buy_order
             logger.debug(self._generate_buy_debug_string(exg_state, buy_order))
             return True

@@ -47,5 +47,8 @@ config = Config(
     # === Order Execution Strategies ===
     buy_strategy=LimitBuyPercentEquity(),          # Defines how buy orders are placed
     sell_strategy=MarketSell(),                    # Defines how sell orders are placed
-    exit_strategy=LimitExitPercentAbove()          # Defines how exits are executed
+    exit_strategy=LimitExitPercentAbove(),          # Defines how exits are executed
+
+    # === Order Execution Strategies ===
+    csv_input_file = 'csv\csv_backtest\short_btc.csv'
 )

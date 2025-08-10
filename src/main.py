@@ -17,7 +17,7 @@ def main():
     args = parser.parse_args()
 
     config = init(args.config)
-    print(config)
+    #print(config)
 
 
 

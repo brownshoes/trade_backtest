@@ -17,11 +17,12 @@ class PlaceSell:
         self.max_retries = 10
 
     def place_sell_order(self, sell_order, exg_state, open_position):
+        current_timestamp = exg_state.current_timestamp
         current_datetime = exg_state.get_current_datetime()
         current_price = exg_state.current_price
 
         if self.client.place_order(sell_order):
-            sell_order.set_order_placed(exg_state.current_timestamp, current_datetime, current_price)
+            sell_order.set_order_placed(current_timestamp, current_datetime, current_price)
             self.trading_state.open_sell_orders[sell_order.order_number] = sell_order
             open_position.lock(sell_order)
 

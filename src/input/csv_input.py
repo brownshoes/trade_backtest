@@ -1,6 +1,5 @@
 import pandas as pd
 from datetime import datetime, timedelta
-from decorators.timeit import timeit
 
 from utils.time_conversion import START_END_TIME_FORMAT
 
@@ -8,7 +7,6 @@ import logging
 from log.logger import LOGGER_NAME
 logger = logging.getLogger(LOGGER_NAME)
 
-@timeit
 def intake_csv_data(csv_file: str, start_time: str, end_time: str) -> tuple[pd.DataFrame, list[dict]]:
     try:
         df = pd.read_csv(csv_file)

@@ -6,6 +6,7 @@ from core.position_tracking.trading_state import TradingState
 from core.trading import Trading
 from core.strategy import Strategy
 from core.time_series import TimeSeries
+from core.limit_adjust import LimitAdjust
 from core.order.order_completion import order_completion_factory
 from core.clients.client_factory import client_factory
 
@@ -47,7 +48,11 @@ class Config:
         exit_trade_conditions: list,
         buy_strategy,
         sell_strategy,
-        exit_strategy
+        exit_strategy,
+
+        # === Intake Fields ===
+        csv_input_file = None
+
     ):
         # === Store Basic Configuration ===
         self.mode = mode.upper()
@@ -74,6 +79,9 @@ class Config:
         self.sell_strategy = sell_strategy
         self.exit_strategy = exit_strategy
 
+        # === Intake Fields ===
+        self.csv_input_file = csv_input_file
+
         # === Time Series Assignment ===
         self.assign_time_series(self.indicators, self.time_series)
         self.assign_time_series(self.identify_entry, self.time_series)
@@ -92,6 +100,7 @@ class Config:
 
         self.trading_state = TradingState()
         self.client = self.init_client(self.mode)
+        self.limit_adjust = LimitAdjust()
 
         # === Trading System Setup ===
         self.trading = Trading(

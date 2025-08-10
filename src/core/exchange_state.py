@@ -81,6 +81,9 @@ class ExchangeState:
         self.current_read_time = self.current_timestamp
         self.start_read_time = time.time()
 
+    def get_all_open_order_numbers(self):
+        return list(self.order_book.keys())
+
     def update_coin_holdings(self, delta: Decimal) -> None:
         """Update coin holdings by a delta amount."""
         self.coin_holdings += delta
