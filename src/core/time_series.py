@@ -16,7 +16,7 @@ class TimeSeries:
         self.candle_size_seconds = self.candle_size * 60 # used for unix timestamp calculations
 
         self.df = None
-        self.candle_list_dict = []
+        self.candle_list = [] # List of Candle uples
 
         self.candle_buffer = []
         self.last_timestamp = None
@@ -51,7 +51,7 @@ class TimeSeries:
     
     
     def create_dataframe(self):
-        self.df = pd.DataFrame(self.candle_list_dict, columns = candle_columns)
+        self.df = pd.DataFrame(self.candle_list, columns = candle_columns)
     
 
     def _process_candle(self, update_timestamp):
@@ -75,7 +75,7 @@ class TimeSeries:
             merged_candle = self._merge_candles(filtered_buffer)
 
             '''append the merged candle'''
-            self.candle_list_dict.append(merged_candle)
+            self.candle_list.append(merged_candle)
 
             self.candle_buffer.clear()
             self.first_candle = False

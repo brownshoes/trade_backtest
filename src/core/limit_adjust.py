@@ -17,7 +17,7 @@ class LimitAdjust:
     Old limit price is: 37,962
     New limit price is: 37,942.02 (.1% of 37980 = 37.98, new Limit Buy price is: 37,962 - 37.98 = 37,942.02)
     '''
-    def adjust_limit_orders(self, place_buy, place_sell, exg_state, trading_state, strategies_buy, strategies_sell):
+    def adjust_limit_orders(self, place_buy, place_sell, exg_state, trading_state, buy_strategy, sell_strategy):
         open_order_nums = exg_state.get_all_open_order_numbers()
         for order_number in open_order_nums:
             order = exg_state.order_book[order_number]
@@ -26,12 +26,12 @@ class LimitAdjust:
                 continue
 
             if(order.order_side == "BUY"):
-                self._buy_limit_order_adjust(order, place_buy, exg_state, strategies_buy)
+                self._buy_limit_order_adjust(order, place_buy, exg_state, buy_strategy)
 
             elif(order.order_side == "SELL"):
-                self._sell_limit_order_adjust(order, place_sell, exg_state, trading_state, strategies_sell)
+                self._sell_limit_order_adjust(order, place_sell, exg_state, trading_state, sell_strategy)
 
-    def _buy_limit_order_adjust(self, buy_order, place_buy, exg_state, strategies_buy):
+    def _buy_limit_order_adjust(self, buy_order, place_buy, exg_state, buy_strategy):
         placed_market_price = buy_order.placed.market_price
         current_market_price = exg_state.current_price
 
@@ -52,7 +52,7 @@ class LimitAdjust:
         logger.info("Limit order adjust: " + message)
 
         if place_buy.cancel_buy_order(buy_order, exg_state):
-            new_order = strategies_buy.create_buy_order(None, None, exg_state)
+            new_order = buy_strategy.create_buy_order(None, None, exg_state)
             self._modify_new_order(buy_order, new_order, exg_state)
 
             buy_result = place_buy.place_buy(new_order, exg_state)
@@ -60,7 +60,7 @@ class LimitAdjust:
             # Retry on failure (only in live mode)
             if exg_state.mode == "live" and not buy_result:
                 logger.error(f"Buy order placement failed for new order {new_order.order_number}. Retrying...")
-                buy_result = place_buy.place_buy_with_retries(new_order, None, None, exg_state, strategies_buy)
+                buy_result = place_buy.place_buy_with_retries(new_order, None, None, exg_state, buy_strategy)
 
                 if not buy_result:
                     logger.error("Buy retries FAILED. Order not placed!")
@@ -70,7 +70,7 @@ class LimitAdjust:
         # If cancel failed
         logger.error(f"Limit order adjust: failed to cancel BUY order {buy_order.order_string()}")
 
-    def _sell_limit_order_adjust(self, sell_order, place_sell, exg_state, trading_state, strategies_sell):
+    def _sell_limit_order_adjust(self, sell_order, place_sell, exg_state, trading_state, sell_strategy):
         placed_market_price = sell_order.placed.market_price
         current_market_price = exg_state.current_price
         open_position = trading_state.get_position_by_sell_order_number(sell_order.order_number)
@@ -92,14 +92,14 @@ class LimitAdjust:
         logger.info("Limit order adjust: " + message)
 
         if place_sell.cancel_sell_order(sell_order, exg_state):
-            new_order = strategies_sell.create_sell_order(open_position, None, None, exg_state)
+            new_order = sell_strategy.create_sell_order(open_position, None, None, exg_state)
             self._modify_new_order(sell_order, new_order, exg_state)
 
             sell_result = place_sell.place_sell(new_order, exg_state, open_position)
 
             if exg_state.mode == "live" and not sell_result:
                 logger.error(f"Sell  order placement failed for new order {new_order.order_number}. Retrying...")
-                sell_result = place_sell.place_sell_with_retries(new_order, open_position, None, None, exg_state, strategies_sell)
+                sell_result = place_sell.place_sell_with_retries(new_order, open_position, None, None, exg_state, sell_strategy)
 
                 if not sell_result:
                     logger.error("Sell retries FAILED. Order not placed!")

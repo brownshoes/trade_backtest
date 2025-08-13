@@ -6,6 +6,7 @@ from core.position_tracking.trading_state import TradingState
 from core.trading import Trading
 from core.strategy import Strategy
 from core.time_series import TimeSeries
+from core.series import Series
 from core.limit_adjust import LimitAdjust
 from core.order.order_completion import order_completion_factory
 from core.clients.client_factory import client_factory
@@ -65,6 +66,8 @@ class Config:
         self.taker_fee = taker_fee
 
         # === Timeframe Settings ===
+        self.start_unix = datetime.strptime(start_time, START_END_TIME_FORMAT).timestamp()
+        self.end_unix = datetime.strptime(end_time, START_END_TIME_FORMAT).timestamp()
         self.main_time_series = main_time_series
         self.exit_time_series = exit_time_series
         self.time_series = self.init_time_series(time_series)
@@ -103,8 +106,17 @@ class Config:
         self.limit_adjust = LimitAdjust()
 
         # === Trading System Setup ===
+        self.strategy = Strategy(
+            self.exit_time_series,
+            self.entry_trade_conditions,
+            self.exit_trade_conditions,
+            self.identify_entry,
+            self.identify_exit
+        )
+
         self.trading = Trading(
             self.mode,
+            self.strategy,
             self.trading_state,
             self.client,
             self.buy_strategy,
@@ -112,14 +124,6 @@ class Config:
             self.exit_strategy,
             self.main_time_series.candle_size,
             self.trade
-        )
-
-        self.strategy = Strategy(
-            self.exit_time_series,
-            self.entry_trade_conditions,
-            self.exit_trade_conditions,
-            self.identify_entry,
-            self.identify_exit
         )
 
         # === Final Checks ===
@@ -148,10 +152,23 @@ class Config:
                 matched_ts = ts_map.get(ts_str)
                 if matched_ts:
                     obj.time_series = matched_ts
+
+                    # Update any Series instances in the object's attributes
+                    for attr_name in dir(obj):
+                        attr = getattr(obj, attr_name)
+                        # Check if attr is an instance of Series
+                        # Assuming Series is imported or available in scope
+                        if isinstance(attr, Series):
+                            attr.time_series = matched_ts
+
                 else:
-                    # Try to get a meaningful identifier
                     obj_name = getattr(obj, 'name', None) or getattr(obj, 'id', None) or repr(obj)
-                    logger.warning(f"No TimeSeries found matching '{ts_str}' for object {obj_name} ({obj.__class__.__name__})")
+                    logger.warning(
+                        f"No TimeSeries found matching '{ts_str}' "
+                        f"for object {obj_name} ({obj.__class__.__name__})"
+                    )
+
+
     
     def checks(self):
         # Validate datetime format

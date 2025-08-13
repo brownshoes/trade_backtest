@@ -17,6 +17,7 @@ class Series:
             raise ValueError("smoothing value incorrectly set")
 
     def time_period_met(self):
+        print(self.time_series)
         if(self.time_series.time_series_index >= self.series.first_valid_index()):
             return True
         return False

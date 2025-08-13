@@ -34,7 +34,7 @@ class ExchangeState:
         self.fulfilled_orders = {}
         self.current_order_number = 0
 
-    def _state_value_check(self) -> None:
+    def validate_exchange_state(self) -> None:
         """Validate that the current state values are present, numeric, and logical."""
         def validate_not_none_and_not_nan(name: str, value):
             if value is None:
@@ -43,7 +43,6 @@ class ExchangeState:
                 raise ValueError(f"{name} is NaN")
 
         # Check required fields
-        validate_not_none_and_not_nan("current_time", self.current_time)
         validate_not_none_and_not_nan("current_price", self.current_price)
         validate_not_none_and_not_nan("current_timestamp", self.current_timestamp)
         validate_not_none_and_not_nan("USD_holdings", self.USD_holdings)

@@ -34,7 +34,7 @@ class BacktestClient(Client):
         s = self.exg_state  # shorthand for readability
 
         executable_orders = []
-        for order_number, order in self.order_book.items():
+        for order_number, order in s.order_book.items():
             if order.order_is_executable(s.current_price, s):
                 executable_orders.append(order)
 

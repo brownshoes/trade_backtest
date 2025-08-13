@@ -81,6 +81,7 @@ def backtest_init(config: Config):
     # Populate indicators with the initialized time series data
     for indicator in config.indicators:
         indicator.populate()
+        print("XXXXXXXXXXXXXXXXXXXXXXXX " + str(indicator.time_series))
 
     backtest = Backtest(config)
     backtest.execute(df)

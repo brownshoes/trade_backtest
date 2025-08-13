@@ -11,9 +11,10 @@ from log.logger import LOGGER_NAME
 logger = logging.getLogger(LOGGER_NAME)
 
 class Trading:
-    def __init__(self, mode, trading_state, client, buy_strategy, sell_strategy, 
+    def __init__(self, mode, strategy, trading_state, client, buy_strategy, sell_strategy, 
                  exit_strategy=None, stats_candle_size=15, trade=False):
         self.mode = mode
+        self.strategy = strategy
         self.trading_state = trading_state
         self.buy_strategy = buy_strategy
         self.sell_strategy = sell_strategy
