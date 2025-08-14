@@ -55,7 +55,7 @@ class BacktestCompletion(OrderCompletion):
             datetime = exg_state.get_current_datetime(),
             market_price = execution_price,
             dollar_amount = abs(USD_change),
-            coin_amount = abs(coin_change),
+            quantity = abs(coin_change),
             fee = fee,
             time_to_execute = execution_timestamp - order.creation_timestamp,
             price_difference = Decimal('0'),  # Could calculate based on initial price if needed

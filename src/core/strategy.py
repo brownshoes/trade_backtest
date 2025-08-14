@@ -56,7 +56,7 @@ class Strategy:
         '''log the results'''
         for open_position, exits in positions_to_close.items():
             logger.info(
-                f"Exit identified for: {open_position.buy_info.order.order_string()} {exits} {exg_state.get_current_datetime()}"
+                f"Exit identified for: {open_position.trade_overview_buy.order.order_string()} {exits} {exg_state.get_current_datetime()}"
             )
 
         return positions_to_close
@@ -78,7 +78,7 @@ class Strategy:
         if(len([x for x in self.exit_time_series if x in time_series_updated_list]) != 0):
             for open_position in trading_state.open_positions.values():
                 '''ensure that we don't attempt to resell the position immediately after buying'''
-                if open_position.buy_info.order.execution_time == exg_state.current_time:
+                if int(open_position.trade_overview_buy.executed_timestamp) == int(exg_state.current_timestamp):
                     continue
 
                 exit_conditions = self._trade_conditions_met_exit(trading_state, exg_state, open_position, self.exit_trade_conditions)

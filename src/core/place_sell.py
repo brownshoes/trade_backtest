@@ -118,11 +118,11 @@ class PlaceSell:
 
     def _generate_sell_debug_string(self, exg_state, sell_order, open_position) -> str:
         debug_string = (
-            f"\n SELL PLACED -> #{open_position.buy_order.order_number} (Open Position)"
+            f"\n SELL PLACED -> #{open_position.trade_overview_buy.order_number} (Open Position)"
             f"\n\t Order Type: {sell_order.order_type}"
-            f"\n\t Time: {exg_state.get_current_datetime()}"
-            f"\n\t Market Price: ${exg_state.current_price:.2f}"
-            f"\n\t Coin Amount: {sell_order.order_coin_amount:.8f}"
+            f"\n\t Time: {sell_order.placed.datetime}"
+            f"\n\t Market Price: ${sell_order.placed.market_price:.2f}"
+            f"\n\t Coin Amount: {sell_order.quantity:.8f}"
             f"\n\t Portfolio Value: ${exg_state.current_portfolio_value():.2f}"
             f"\n-----------------------------------------------------------"
         )

@@ -7,11 +7,11 @@ from core.position_tracking.trade_data import TradeOverview
 class ClosedPosition:
     def __init__(self, open_position: 'OpenPosition'):
         self.open_position = open_position
-        self.entry_trade = open_position.buy_trade_overview
-        self.sell_trades = sorted(open_position.sell_trade_overviews, key=lambda t: t.executed_datetime)
+        self.entry_trade = open_position.trade_overview_buy
+        self.sell_trades = sorted(open_position.sell_trade_overviews, key=lambda t: t.executed_timestamp)
 
         # Combine all trades (entry + exits) chronologically
-        self.all_trades = sorted([self.entry_trade] + self.sell_trades, key=lambda t: t.executed_datetime)
+        self.all_trades = sorted([self.entry_trade] + self.sell_trades, key=lambda t: t.executed_timestamp)
         self.order_list = self.all_trades  # Alias for compatibility or clarity
 
         # Core stats
@@ -21,6 +21,8 @@ class ClosedPosition:
         self.close_market_price = self.sell_trades[-1].executed_market_price
         self.open_datetime = self.entry_trade.executed_datetime
         self.close_datetime = self.sell_trades[-1].executed_datetime
+        self.open_timestamp = self.entry_trade.executed_timestamp
+        self.close_timestamp = self.sell_trades[-1].executed_timestamp
         self.position_duration = self.calculate_duration()
 
         # Profit/loss
@@ -49,7 +51,7 @@ class ClosedPosition:
         return net_pnl, pnl_pct
 
     def calculate_duration(self) -> timedelta:
-        return self.close_datetime - self.open_datetime
+        return self.close_timestamp - self.open_timestamp
 
     def calculate_run_up(self) -> tuple[Decimal, Decimal]:
         entry_price = self.open_market_price

@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from init.config import Config
 from decorators.timeit import timeit
 
@@ -13,6 +15,7 @@ class Backtest:
         self.config = config
 
         # Time series data
+        self.main_time_series = config.main_time_series
         self.time_series_list = config.time_series
 
         # Exchange & trading state
@@ -93,9 +96,15 @@ class Backtest:
 
             '''If a time_series was updated, execute trading_strategy'''
             if self.min_num_candles_buffered and time_series_updated and timestamp >= self.start_unix:
+                #Update OpenPositions first
+                if self.main_time_series in time_series_updated:
+                    self.trading_state.update_open_positions(Decimal(opens[i]))
+
                 self.trading.execute_trading_strategy(self.exg_state, time_series_updated)
                 self.client.check_orders_for_execution()
                 self.trading.check_open_orders_for_completion(self.exg_state)
+
+
 
             '''Check here following the increment of the index. Takes effect the next iteration'''
             self._check_min_num_of_candles()

@@ -115,9 +115,9 @@ class PlaceBuy:
         return (
             f"\nBUY PLACED:-> {buy_order.order_string()}"
             f"\n\tOrder Type: {buy_order.order_type}"
-            f"\n\tTime: {exg_state.get_current_datetime()}"
-            f"\n\tMarket Price: ${exg_state.current_price:.2f}"
-            f"\n\tCoin Amount: {buy_order.order_quantity:.8f}"
+            f"\n\tTime: {buy_order.placed.datetime}"
+            f"\n\tMarket Price: ${buy_order.placed.market_price:.2f}"
+            f"\n\tCoin Amount: {buy_order.quantity:.8f}"
             f"\n\tPortfolio Value: ${exg_state.current_portfolio_value():.2f}"
         )
 

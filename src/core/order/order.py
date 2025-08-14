@@ -123,9 +123,9 @@ class Order:
             return True
 
         if self.order_type == "LIMIT":
-            if self.order_side == "BUY" and current_price <= self.limit_price:
+            if self.order_side == "BUY" and self.limit_price < current_price:
                 return True
-            if self.order_side == "SELL" and current_price >= self.limit_price:
+            if self.order_side == "SELL" and self.limit_price > current_price:
                 return True
 
         logger.error(
@@ -216,7 +216,7 @@ class Order:
         datetime: str,
         market_price: Decimal,
         dollar_amount: Decimal,
-        coin_amount: Decimal,
+        quantity: Decimal,
         fee: Decimal,
         time_to_execute: float,
         price_difference: Decimal,
@@ -227,7 +227,7 @@ class Order:
             datetime,
             market_price,
             dollar_amount,
-            coin_amount,
+            quantity,
             fee,
             time_to_execute,
             price_difference,

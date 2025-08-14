@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from core.clients.client import Client
 from core.order.order import Order
 
@@ -8,7 +10,7 @@ logger = logging.getLogger(LOGGER_NAME)
 class BacktestClient(Client):
     def __init__(self, exg_state, order_completion, client_api=None):
         self.exg_state = exg_state
-        self.order_completion = order_completion
+        #self.order_completion = order_completion
         self.client_api = client_api
 
     def place_order(self, order: Order) -> bool:
@@ -23,8 +25,9 @@ class BacktestClient(Client):
         logger.info(f"Placed on order book: {order.order_string()}")
 
         if order.order_is_executable(s.current_price, s):
-            self.order_completion.complete_order(order, s)
-            s.fulfill_order(order)
+            # self.order_completion.complete_order(order, s)
+            self.complete_order(order, s)
+            self.fulfill_order(order)
         else:
             logger.debug(f"Order #{order.order_number} is not immediately executable: {order.order_string()}")
 
@@ -40,7 +43,8 @@ class BacktestClient(Client):
 
         for order in executable_orders:
             logger.info(f"Executing order: {order.order_string()}")
-            self.order_completion.complete_order(order, s)
+            #self.order_completion.complete_order(order, s)
+            self.complete_order(order, s)
             self.fulfill_order(order)
 
         return executable_orders
@@ -65,5 +69,46 @@ class BacktestClient(Client):
         del s.order_book[order.order_number]
         logger.info(f"Order removed/cancelled from order book: {order.order_string()} Time: {s.get_current_datetime()}")
         return True
+    
+    def complete_order(self, order, exg_state):
+        current_price = exg_state.current_price
+
+        #revert back to original funds
+        order.restore_funds(exg_state)
+
+        #Calculate fee for market and stop orders
+        fee = order.quantity * current_price * order.fee_percentage
+
+        '''If this is a limit buy, then we want to execute on the limit price, not the current market price'''
+        execution_price = (
+            order.limit_price if order.order_type == "LIMIT" else current_price
+        )
+
+        if order.order_side == "BUY":
+            USD_change = 0 - (order.quantity * execution_price + fee)
+            coin_change = order.quantity
+
+        elif order.order_side == "SELL":
+            USD_change = (order.quantity * execution_price) - fee
+            coin_change = 0 - order.quantity
+
+        # Update holdings on the state object
+        exg_state.update_USD_holdings(USD_change)
+        exg_state.update_coin_holdings(coin_change)
+
+        # Record execution details using OrderExecution object
+        execution_timestamp = exg_state.current_timestamp
+
+        order.set_order_execution(
+            timestamp = execution_timestamp,
+            datetime = exg_state.get_current_datetime(),
+            market_price = execution_price,
+            dollar_amount = abs(USD_change),
+            quantity = abs(coin_change),
+            fee = fee,
+            time_to_execute = execution_timestamp - order.creation_timestamp,
+            price_difference = Decimal('0'),  # Could calculate based on initial price if needed
+            price_difference_percent = Decimal('0'),
+        )
 
 

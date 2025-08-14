@@ -80,6 +80,11 @@ class ExchangeState:
         self.current_read_time = self.current_timestamp
         self.start_read_time = time.time()
 
+    def provide_order_number(self):
+        self.current_order_number += 1
+        order_number = self.current_order_number
+        return order_number
+
     def get_all_open_order_numbers(self):
         return list(self.order_book.keys())
 

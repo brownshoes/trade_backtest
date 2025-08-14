@@ -41,7 +41,7 @@ class Trading:
         buy_trade_overviews = self.placeBuy.check_and_complete_all_buy_orders(exg_state)
 
         for trade_overview_buy in buy_trade_overviews:
-            open_position = self._open_position(trade_overview_buy, exg_state)
+            open_position = self._open_position(trade_overview_buy)
 
             self._execute_strategy_exit(open_position, exg_state)
 
@@ -51,18 +51,19 @@ class Trading:
         for sell_trade_overview in sell_trade_overviews:
             # Record the sell in the OpenPosition
             open_position = self.trading_state.get_position_by_sell_order_number(sell_trade_overview.order_number)
-            trade_result = open_position.record_sell()
+            trade_result = open_position.record_sell(sell_trade_overview)
             logger.info(trade_result)
 
         for order_num, open_position in list(self.trading_state.open_positions.items()):
             if open_position.percent_sold >= 0.999:
-                self._close_position(open_position, exg_state)
+                self._close_position(open_position)
 
     def _open_position(self, trade_overview_buy):
         self.trade_num += 1
         open_position = OpenPosition(trade_overview_buy, self.trade_num)
         self.trading_state.add_open_position(open_position)
 
+        return open_position
 
     def _close_position(self, open_position):
         closed_position = ClosedPosition(open_position)
@@ -81,7 +82,7 @@ class Trading:
             return 
 
         buy_order = self.buy_strategy.create_buy_order(identified_entries, self.trading_state, exg_state)
-        result = self._place_buy_order.place_buy_order(buy_order, exg_state)
+        result = self._place_buy_order(buy_order, exg_state)
 
         # Retry logic if initial placement fails (live mode)
         if self.mode == "live" and result is False:
@@ -111,12 +112,12 @@ class Trading:
         # Step 1: Cancel any existing sells that were placed by a strategy_exit for this open_position
         for open_position, exits in positions_to_close.items():
             if open_position.is_locked:
-                cancel_result = self.placeSell.cancel_sell_order(open_position.sell_order, exg_state)
+                cancel_result = self.placeSell.cancel_sell_order(open_position.placed_sell_order, exg_state, open_position)
 
                 if not cancel_result:
                     logger.error(
-                        f"Failed to cancel open sell order: {open_position.sell_order.order_string()} "
-                        f"for buy_order: {open_position.buy_order.order_string()}"
+                        f"Failed to cancel open sell order: {open_position.placed_sell_order.order_string()} "
+                        f"for buy_order: {open_position.trade_overview_buy.order.order_string()}"
                     )
                     success = False
                     continue
@@ -145,7 +146,7 @@ class Trading:
                     continue
 
             # Check if the sell was executed immediately
-            if result and self.placeSell.check_if_sell_order_executed(exg_state, sell_order):
+            if result and self.placeSell._is_sell_order_executed(exg_state, sell_order):
                 self._check_open_sell_orders(exg_state)
 
         return success
@@ -203,7 +204,7 @@ class Trading:
         )
         exg_state.log_portfolio()
 
-        result = self.placeSell.place_sell(sell_order, exg_state, open_position)
+        result = self.placeSell.place_sell_order(sell_order, exg_state, open_position)
 
         if(result == False):
             logger.error(f"Sell order failed to place: {sell_order.order_string()} Time: {current_datetime}")

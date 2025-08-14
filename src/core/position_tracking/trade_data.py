@@ -11,11 +11,12 @@ class TradeOverview:
         self.placed_market_price = order.placed.market_price
 
         # Executed data
+        self.executed_timestamp = order.execution.timestamp
         self.executed_datetime = order.execution.datetime
         self.executed_market_price = order.execution.market_price
         self.dollar_amount = order.execution.dollar_amount
         self.quantity = order.execution.quantity
-        self.fee = order.fee
+        self.fee = order.execution.fee
         self.time_to_execute = order.execution.time_to_execute
         self.slippage = order.execution.price_difference
         self.slippage_pct = order.execution.price_difference_percent

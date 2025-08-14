@@ -4,11 +4,11 @@ from core.position_tracking.trade_data import TradeOverview, TradeResult
 from core.order.order import Order
 
 class OpenPosition:
-    def __init__(self, buy_trade_overview: 'TradeOverview', trade_num) -> None:
+    def __init__(self, trade_overview_buy: 'TradeOverview', trade_num) -> None:
         self.trade_num = trade_num
-        self.buy_trade_overview: TradeOverview = buy_trade_overview
-        self.entry_price = buy_trade_overview.executed_market_price
-        self.entry_quantity = buy_trade_overview.quantity
+        self.trade_overview_buy: TradeOverview = trade_overview_buy
+        self.entry_price = trade_overview_buy.executed_market_price
+        self.entry_quantity = trade_overview_buy.quantity
 
         # Track how much of the position has been sold
         self.percent_sold = Decimal(0)
@@ -54,7 +54,7 @@ class OpenPosition:
         """Record a completed or placed sell order."""
         quantity = sell_trade_overview.quantity
         self.quantity_sold += quantity
-        self.percent_sold = self.amount_sold / self.buy_trade_overview.quantity
+        self.percent_sold = self.quantity_sold / self.trade_overview_buy.quantity
         self.times_sold += 1
 
         trade_result = TradeResult(sell_trade_overview, self)

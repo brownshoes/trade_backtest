@@ -31,7 +31,7 @@ config = Config(
     # === Timeframe Configuration ===
     time_series=['15m', '1h'],         # Timeframes used for indicators/data
     main_time_series="15m",            # Primary timeframe for strategy logic
-    exit_time_series="15m",            # Timeframe used for exit logic
+    exit_time_series=['15m', '1h'],    # Timeframes used for exit logic
 
     # === Indicators ===
     indicators=[supertrend],           # List of technical indicators used

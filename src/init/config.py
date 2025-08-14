@@ -91,7 +91,8 @@ class Config:
         self.assign_time_series(self.identify_exit, self.time_series)
 
         self.main_time_series = self.resolve_time_series(main_time_series)
-        self.exit_time_series = self.resolve_time_series(exit_time_series)
+        self.exit_time_series = [self.resolve_time_series(ts_str) for ts_str in self.exit_time_series]
+
 
         # === State Initialization ===
         self.exg_state = ExchangeState(

@@ -27,6 +27,10 @@ class TradingState:
                     return position
         return None
     
+    def update_open_positions(self, current_price):
+        for order_number, open_position in self.open_positions.items():
+            open_position.update_position(current_price)
+    
     def add_open_position(self, open_position: 'OpenPosition'):
         self.open_positions[open_position.trade_overview_buy.order_number] = open_position
 

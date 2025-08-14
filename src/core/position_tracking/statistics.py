@@ -85,10 +85,9 @@ class Statistics:
         if candle_seconds == 0:
             return 0.0
 
-        total_seconds = sum(p.position_duration.total_seconds() for p in trades)
+        total_seconds = sum(p.position_duration for p in trades)
         avg_duration = total_seconds / len(trades)
         return round(avg_duration / candle_seconds, 2)
-
     
 
     def _calculate_sharpe_ratio(self):
