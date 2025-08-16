@@ -68,7 +68,8 @@ def load_csv(config: Config):
         logger.info(f"Buffered start time: {buffered_start_time}")
         df, list_of_dict = intake_csv_data(config.csv_input_file, buffered_start_time, config.end_time)
         return df, list_of_dict
-
+    
+@timeit
 def backtest_init(config: Config):
     """
     Initialize backtest: load CSV data, backfill time series, and populate indicators.
@@ -93,6 +94,5 @@ def init(config_module_name: str):
     setup_logger(config_module_name)
     create_directories()
     config = load_config(config_module_name)
-    load_csv(config)
     backtest_init(config)
     return config

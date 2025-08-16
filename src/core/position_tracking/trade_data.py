@@ -45,6 +45,8 @@ class TradeResult:
         self.exit_price = sell_trade_overview.executed_market_price
         self.quantity = sell_trade_overview.quantity
         self.fee = sell_trade_overview.fee
+        self.entry_datetime = open_position.trade_overview_buy.executed_datetime
+        self.exit_datetime = sell_trade_overview.executed_datetime
 
         # Total % of the original position this sell represents
         self.percent_of_position = (self.quantity / open_position.entry_quantity) * Decimal(100)
@@ -82,7 +84,7 @@ class TradeResult:
             return f"{color}{value:.2f}{symbol}{RESET}"
 
         lines = [
-            f"{BOLD}{BLUE}🔽 Trade Result Summary{RESET}",
+            f"\n{BOLD}{BLUE}🔽 Trade Result Summary{RESET}",
             f"{BLUE}{'-' * 45}{RESET}",
             f"{BOLD}Entry Price             :{RESET} {fmt_money(self.entry_price)}",
             f"{BOLD}Exit Price              :{RESET} {fmt_money(self.exit_price)}",

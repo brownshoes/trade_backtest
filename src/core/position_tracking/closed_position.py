@@ -1,5 +1,5 @@
 from decimal import Decimal
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 from core.position_tracking.open_position import OpenPosition
 from core.position_tracking.trade_data import TradeOverview
@@ -24,6 +24,7 @@ class ClosedPosition:
         self.open_timestamp = self.entry_trade.executed_timestamp
         self.close_timestamp = self.sell_trades[-1].executed_timestamp
         self.position_duration = self.calculate_duration()
+        self.position_duration_formated = self.calculate_duration_formatted()
 
         # Profit/loss
         usd, percent = self.calculate_profit_and_loss()
@@ -52,6 +53,20 @@ class ClosedPosition:
 
     def calculate_duration(self) -> timedelta:
         return self.close_timestamp - self.open_timestamp
+    
+    def calculate_duration_formatted(self) -> str:
+        # Convert float timestamps to datetime
+        open_dt = datetime.fromtimestamp(self.open_timestamp)
+        close_dt = datetime.fromtimestamp(self.close_timestamp)
+
+        # Calculate duration
+        duration: timedelta = close_dt - open_dt
+
+        # Convert duration to HH:MM:SS
+        total_seconds = int(duration.total_seconds())
+        hours, remainder = divmod(total_seconds, 3600)
+        minutes, seconds = divmod(remainder, 60)
+        return f"{hours:02}:{minutes:02}:{seconds:02}"
 
     def calculate_run_up(self) -> tuple[Decimal, Decimal]:
         entry_price = self.open_market_price
@@ -67,21 +82,41 @@ class ClosedPosition:
         drawdown_pct = ((entry_price - min_price) / entry_price) * Decimal(100) if entry_price != 0 else Decimal(0)
         return drawdown_dollar, drawdown_pct
     
-    def summary(self) -> str:
-        return (
-            f"📊 Closed Position Summary\n"
-            f"{'-'*40}\n"
-            f"📅 Entry Time       : {self.open_datetime}\n"
-            f"📅 Exit Time        : {self.close_datetime}\n"
-            f"⏳ Duration         : {self.position_duration}\n\n"
-            f"💰 Entry Price      : {self.open_market_price:.2f}\n"
-            f"💰 Exit Price       : {self.close_market_price:.2f}\n"
-            f"🔢 Quantity         : {self.quantity:.6f}\n\n"
-            f"💵 Gross P&L        : ${self.profit_and_loss:.2f}\n"
-            f"📈 P&L Percent      : {self.profit_and_loss_percent:.2f}%\n"
-            f"💸 Total Fees       : ${self.fees:.2f}\n\n"
-            f"📈 Max Run-up       : ${self.run_up:.2f} ({self.run_up_pct:.2f}%)\n"
-            f"📉 Max Drawdown     : ${self.drawdown:.2f} ({self.drawdown_pct:.2f}%)\n"
-            f"📊 Cumulative P&L   : ${self.cumulative_profit_and_loss:.2f}\n"
-            f"{'-'*40}"
-        )
+    def __str__(self) -> str:
+        GREEN = "\033[92m"
+        RED = "\033[91m"
+        YELLOW = "\033[93m"
+        BLUE = "\033[94m"
+        BOLD = "\033[1m"
+        RESET = "\033[0m"
+
+        def fmt_money(value):
+            return f"${value:.2f}"
+
+        def colorize(value, is_percent=False):
+            color = GREEN if value >= 0 else RED
+            symbol = "%" if is_percent else ""
+            return f"{color}{value:.2f}{symbol}{RESET}"
+
+        lines = [
+            f"\n{BOLD}{BLUE}Closed Position Summary{RESET}",
+            f"{BLUE}{'-'*40}{RESET}",
+            f"{BOLD}Entry Time        :{RESET} {self.open_datetime}",
+            f"{BOLD}Exit Time         :{RESET} {self.close_datetime}",
+            f"{BOLD}Duration          :{RESET} {self.position_duration_formated}{RESET}",
+            "",
+            f"{BOLD}Entry Price       :{RESET} {GREEN}{fmt_money(self.open_market_price)}{RESET}",
+            f"{BOLD}Exit Price        :{RESET} {GREEN}{fmt_money(self.close_market_price)}{RESET}",
+            f"{BOLD}Quantity          :{RESET} {self.quantity:.6f}",
+            "",
+            f"{BOLD}Gross P&L         :{RESET} {colorize(self.profit_and_loss)}",
+            f"{BOLD}P&L Percent       :{RESET} {colorize(self.profit_and_loss_percent, is_percent=True)}",
+            f"{BOLD}Total Fees        :{RESET} {YELLOW}{fmt_money(self.fees)}{RESET}",
+            "",
+            f"{BOLD}Max Run-up        :{RESET} {GREEN}{fmt_money(self.run_up)} ({self.run_up_pct:.2f}%){RESET}",
+            f"{BOLD}Max Drawdown      :{RESET} {RED}{fmt_money(self.drawdown)} ({self.drawdown_pct:.2f}%){RESET}",
+            f"{BOLD}Cumulative P&L    :{RESET} {colorize(self.cumulative_profit_and_loss)}",
+            f"{BLUE}{'-'*40}{RESET}",
+        ]
+
+        return "\n".join(lines)

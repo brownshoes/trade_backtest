@@ -3,6 +3,7 @@ import inspect
 
 from core.exchange_state import ExchangeState
 from core.position_tracking.trading_state import TradingState
+from customization.conditions.entry_trade_conditions import OnlyOneOpenBuyCondition, OnlyOneOpenPositionEntryCondition
 from core.trading import Trading
 from core.strategy import Strategy
 from core.time_series import TimeSeries
@@ -72,12 +73,17 @@ class Config:
         self.exit_time_series = exit_time_series
         self.time_series = self.init_time_series(time_series)
 
-        # === Strategy Components ===
+        # === Inidcator/ Identify Components ===
         self.indicators = indicators
         self.identify_entry = identify_entry
         self.identify_exit = identify_exit
-        self.entry_trade_conditions = entry_trade_conditions
+
+        # === Conditions ===
+        default_entry_trade_conditions = [OnlyOneOpenBuyCondition(), OnlyOneOpenPositionEntryCondition()]
+        self.entry_trade_conditions = entry_trade_conditions + default_entry_trade_conditions
         self.exit_trade_conditions = exit_trade_conditions
+
+        # === Buy/Sell ===
         self.buy_strategy = buy_strategy
         self.sell_strategy = sell_strategy
         self.exit_strategy = exit_strategy

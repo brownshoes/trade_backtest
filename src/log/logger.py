@@ -1,51 +1,74 @@
 import logging
 import os
-
-from utils.time_conversion import LOOGER_DATETIME_FORMAT
-
+import re
+from datetime import datetime
 from logging import StreamHandler
 from logging.handlers import RotatingFileHandler
 
-from datetime import datetime
+from utils.time_conversion import LOGGER_DATETIME_FORMAT  # Make sure this exists
 
 LOGGER_NAME = "my_logger"
 
 def setup_logger(file_name, mode="On"):
-    time = datetime.now().strftime(LOOGER_DATETIME_FORMAT)
+    # Helper to strip ANSI escape codes (e.g., color codes)
+    def remove_ansi_codes(text) -> str:
+        text = str(text)  # Convert objects like DataFrames to string
+        ansi_escape = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
+        return ansi_escape.sub('', text)
 
-    megabyte = 1048576 * 10
-    log_directory = 'log\\logs'
-    log_filename = time + "_" + file_name + '.log'
+    # Custom Formatter that strips ANSI codes from formatted log message
+    class PlainTextFormatter(logging.Formatter):
+        def format(self, record):
+            original_msg = super().format(record)
+            return remove_ansi_codes(original_msg)
+
+    # Generate a timestamped log file name
+    time = datetime.now().strftime(LOGGER_DATETIME_FORMAT)
+
+    # Define log file path
+    max_log_size = 10 * 1024 * 1024  # 10 MB
+    log_directory = os.path.join('log', 'logs')
+    log_filename = f"{time}_{file_name}.log"
     log_path = os.path.join(log_directory, log_filename)
-    if not os.path.exists(log_directory):
-        os.makedirs(log_directory)
 
-    # Create the Logger
+    # Create the log directory if it doesn't exist
+    os.makedirs(log_directory, exist_ok=True)
+
+    # Create or get the named logger
     logger = logging.getLogger(LOGGER_NAME)
-    logger.setLevel(logging.DEBUG)
+    logger.setLevel(logging.DEBUG)  # Capture all log levels
 
-    # Create the Handler for logging data to a file
-    logger_handler = RotatingFileHandler(log_path, maxBytes=megabyte, backupCount=10)
-    logger_handler.setLevel(logging.DEBUG)
+    # Clear old handlers to prevent duplicate logs if setup_logger is called again
+    if logger.hasHandlers():
+        logger.handlers.clear()
 
-    # Create the Handler for logging data to console.
+    # File handler (rotating)
+    file_handler = RotatingFileHandler(
+        log_path, maxBytes=max_log_size, backupCount=10, encoding='utf-8'
+    )
+    file_handler.setLevel(logging.DEBUG)
+
+    # Console handler
     console_handler = StreamHandler()
     console_handler.setLevel(logging.DEBUG)
 
-    # Disable Logging
-    if mode == "OFF":
-        logger_handler.setLevel(logging.CRITICAL + 1)
-        console_handler.setLevel(logging.CRITICAL + 1)
+    # Disable logging output if mode is OFF
+    if mode.lower() == "off":
+        file_handler.setLevel(logging.CRITICAL)
+        console_handler.setLevel(logging.CRITICAL)
 
-    # Create a Formatter for formatting the log messages
-    logger_formatter = logging.Formatter('%(asctime)s - %(levelname)s - [%(filename)s:%(funcName)s:%(lineno)s] - %(message)s')
+    # Format string for both handlers
+    log_format = '%(asctime)s - %(levelname)s - [%(filename)s:%(funcName)s:%(lineno)d] - %(message)s'
 
-    # Add the Formatter to the Handler
-    logger_handler.setFormatter(logger_formatter)
-    console_handler.setFormatter(logger_formatter)
+    # Apply formatters
+    file_formatter = PlainTextFormatter(log_format)
+    console_formatter = logging.Formatter(log_format)
 
-    # Add the Handler to the Logger
-    logger.addHandler(logger_handler)
+    file_handler.setFormatter(file_formatter)       # ANSI codes removed
+    console_handler.setFormatter(console_formatter) # ANSI codes retained (for colors)
+
+    # Add handlers to the logger
+    logger.addHandler(file_handler)
     logger.addHandler(console_handler)
 
     return logger

@@ -1,7 +1,7 @@
 import datetime
 
 '''Datetime formats'''
-LOOGER_DATETIME_FORMAT = '%Y-%m-%d-%H-%M-%S'
+LOGGER_DATETIME_FORMAT = '%Y-%m-%d-%H-%M-%S'
 START_END_TIME_FORMAT = "%Y-%m-%d %H:%M"
 TIMESTAMP_TO_DATETIME_FORMAT= "%Y-%m-%d, %H:%M:%S %a"
 

@@ -41,7 +41,7 @@ config = Config(
     identify_exit=[SupertrendExit(supertrend)],    # Signal logic for exiting trades
 
     # === Trade Filters / Conditions ===
-    entry_trade_conditions=[NoEntryCondition()],       # Conditions to allow entry
+    entry_trade_conditions=[],                         # Conditions to allow entry
     exit_trade_conditions=[ExitOnPercentDecrease()],   # Conditions to trigger an exit
 
     # === Order Execution Strategies ===

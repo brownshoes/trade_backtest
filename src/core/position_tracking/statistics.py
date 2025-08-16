@@ -73,7 +73,7 @@ class Statistics:
         # Trade-by-trade log (overview)
         self.overview = self.trading_state.equity_log
 
-    def _avg_bars(self, trades) -> float:
+    def _avg_bars(self, trades) -> Decimal:
         """
         Calculates the average number of bars (candles) each trade lasted.
         self.candle_size is an integer representing candle duration in minutes.
@@ -116,7 +116,7 @@ class Statistics:
             return Decimal('Infinity') if avg_return > 0 else Decimal(0)
 
         # Assume 0 risk-free rate unless specified
-        excess_return = avg_return - float(self.risk_free_rate)
+        excess_return = avg_return - Decimal(self.risk_free_rate)
 
         sharpe = excess_return / stddev
         return round(Decimal(sharpe), 4)
@@ -149,7 +149,7 @@ class Statistics:
         if downside_deviation == 0:
             return Decimal('Infinity') if avg_return > 0 else Decimal(0)
 
-        excess_return = avg_return - float(self.risk_free_rate)
+        excess_return = avg_return - Decimal(self.risk_free_rate)
         sortino = excess_return / downside_deviation
 
         return round(Decimal(sortino), 4)
@@ -234,7 +234,7 @@ class Statistics:
         self.sharpe_ratio = None       # Measures return per unit of total volatility
         self.sortino_ratio = None      # Measures return per unit of downside volatility only
 
-    def summary_string_color(self) -> str:
+    def __str__(self) -> str:
         GREEN = "\033[92m"
         RED = "\033[91m"
         YELLOW = "\033[93m"
@@ -251,7 +251,7 @@ class Statistics:
             return f"{color}{value:.2f}{symbol}{RESET}"
 
         lines = [
-            f"{BOLD}{BLUE}🔎 Strategy Performance Summary{RESET}",
+            f"\n{BOLD}{BLUE}🔎 Strategy Performance Summary{RESET}",
             f"{BLUE}{'-' * 45}{RESET}",
             f"{BOLD}Total Trades Closed     :{RESET} {self.total_trades}",
             f"{BOLD}Open Positions          :{RESET} {self.total_open_trades}",
@@ -280,37 +280,4 @@ class Statistics:
             f"{BLUE}{'-' * 45}{RESET}",
         ]
 
-        return "\n".join(lines)
-
-
-    def summary_string(self) -> str:
-        lines = [
-            "🔎 Strategy Performance Summary",
-            "----------------------------------------",
-            f"Total Trades Closed     : {self.total_trades}",
-            f"Open Positions          : {self.total_open_trades}",
-            f"Profitable Trades       : {self.winning_trades} ({self.percent_profitable:.2f}%)",
-            f"Losing Trades           : {self.losing_trades}",
-            "",
-            f"Total P&L               : ${self.total_profit_and_loss:.2f}",
-            f"Total P&L (%)           : {self.total_profit_and_loss_percent:.2f}%",
-            f"Total Fees Paid         : ${self.total_fees:.2f}",
-            "",
-            f"Avg Trade P&L           : ${self.avg_profit_and_loss:.2f} ({self.avg_profit_and_loss_percent:.2f}%)",
-            f"Avg Winning Trade       : ${self.avg_winning_trade:.2f} ({self.avg_winning_trade_percent:.2f}%)",
-            f"Avg Losing Trade        : ${self.avg_losing_trade:.2f} ({self.avg_losing_trade_percent:.2f}%)",
-            f"Win/Loss Ratio          : {self.ratio_avg_win_to_loss:.2f}",
-            "",
-            f"Largest Win             : ${self.largest_winning_trade:.2f} ({self.largest_winning_trade_percent:.2f}%)",
-            f"Largest Loss            : ${self.largest_losing_trade:.2f} ({self.largest_losing_trade_percent:.2f}%)",
-            "",
-            f"Max Drawdown            : ${self.max_equity_drawdown:.2f} ({self.max_equity_drawdown_percent:.2f}%)",
-            f"Sharpe Ratio            : {self.sharpe_ratio if self.sharpe_ratio is not None else 'N/A'}",
-            f"Sortino Ratio           : {self.sortino_ratio if self.sortino_ratio is not None else 'N/A'}",
-            "",
-            f"Avg Bars in Trades      : {self.avg_num_bars_in_trades:.1f}",
-            f"Avg Bars (Winners)      : {self.avg_num_bars_in_winning_trades:.1f}",
-            f"Avg Bars (Losers)       : {self.avg_num_bars_in_losing_trades:.1f}",
-            "----------------------------------------"
-        ]
         return "\n".join(lines)

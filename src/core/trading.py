@@ -67,12 +67,12 @@ class Trading:
 
     def _close_position(self, open_position):
         closed_position = ClosedPosition(open_position)
-        self.trading_state.add_closed_position(ClosedPosition(open_position))
+        self.trading_state.add_closed_position(closed_position)
 
         statistics = Statistics(self.trading_state, self.stats_candle_size)
 
-        logger.info(closed_position.summary())
-        logger.info(statistics.summary_string_color())
+        logger.info(closed_position)
+        logger.info(statistics)
 
     '''Only executes one buy order per cycle'''
     def _execute_buy_logic(self, exg_state, time_series_updated_list):

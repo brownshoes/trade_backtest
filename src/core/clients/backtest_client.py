@@ -38,7 +38,7 @@ class BacktestClient(Client):
 
         executable_orders = []
         for order_number, order in s.order_book.items():
-            if order.order_is_executable(s.current_price, s):
+            if order.order_is_executable(s.current_price, s, mode="BACKTEST"):
                 executable_orders.append(order)
 
         for order in executable_orders:

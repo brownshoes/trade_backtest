@@ -11,6 +11,6 @@ def timeit(func):
         start = time.time()
         result = func(*args, **kwargs)
         end = time.time()
-        logger.info(f"Function `{func.__name__}` executed in {end - start:.4f} seconds")
+        logger.critical(f"Function `{func.__name__}` executed in {end - start:.4f} seconds")
         return result
     return wrapper

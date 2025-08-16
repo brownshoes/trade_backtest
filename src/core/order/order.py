@@ -136,28 +136,29 @@ class Order:
         return False
 
         
-    '''Check if the order is currently executable based on market conditions.'''
-    def order_is_executable(self, current_price: Decimal, exg_state) -> bool:
+    def order_is_executable(self, current_price: Decimal, exg_state, mode: str = "") -> bool:
         if self.order_type == "MARKET":
             return True
-        
-        info_string = (
-            f"Order #{self.order_number} not currently executable.\n"
-            f"\tCurrent Market Price: ${round(current_price, 2)}\n"
-            f"\tLimit Price: ${round(self.limit_price, 2)}\n"
-            f"\tOrder Type: {self.order_type}, Side: {self.order_side}\n"
-            f"\tCurrent Time: {exg_state.get_current_datetime()}"
-        )
 
+        reason = ""
         if self.order_side == "BUY" and current_price > self.limit_price:
-            logger.debug(info_string + "\n\tMarket price is higher than limit buy price.")
-            return False
+            reason = "Order not currently executable. Market price is higher than limit BUY price."
+        elif self.order_side == "SELL" and current_price < self.limit_price:
+            reason = "Order not currently executable. Market price is lower than limit SELL price."
 
-        if self.order_side == "SELL" and current_price < self.limit_price:
-            logger.debug(info_string + "\n\tMarket price is lower than limit sell price.")
+        if reason:
+            info_string = (
+                f"\t{self.order_string()}\n"
+                f"\tCurrent Market Price : ${round(current_price, 2)}\n"
+                f"\tLimit Price          : ${round(self.limit_price, 2)}\n"
+                f"\tCurrent Time         : {exg_state.get_current_datetime()}"
+            )
+            if mode != "BACKTEST": # When backtesting there is too much logging 
+                logger.debug(f"{reason}\n{info_string}")
             return False
 
         return True
+
 
     def hold_funds(self, exg_state):
         """
