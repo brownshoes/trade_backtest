@@ -120,3 +120,26 @@ class ClosedPosition:
         ]
 
         return "\n".join(lines)
+    
+    def to_dict(self):
+        return {
+            "quantity": self.quantity,
+            "fees": float(self.fees),
+            "open_market_price": float(self.open_market_price),
+            "close_market_price": float(self.close_market_price),
+            "open_datetime": self.open_datetime,
+            "close_datetime": self.close_datetime,
+            "position_duration": self.position_duration,
+            "position_duration_formatted": self.position_duration_formated,
+            "profit_and_loss": float(self.profit_and_loss),
+            "profit_and_loss_percent": float(self.profit_and_loss_percent),
+            "run_up": float(self.run_up),
+            "run_up_pct": float(self.run_up_pct),
+            "drawdown": float(self.drawdown),
+            "drawdown_pct": float(self.drawdown_pct),
+            "cumulative_profit_and_loss" : float(self.cumulative_profit_and_loss),
+            "trade_results": [
+                sell_trade.trade_result.to_dict()
+                for sell_trade in self.sell_trades
+            ]
+        }

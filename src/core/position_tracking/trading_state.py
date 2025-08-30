@@ -60,7 +60,7 @@ class TradingState:
         # Record snapshot
         self.equity_log.append({
             "trade_num": len(self.closed_positions),
-            "timestamp": closed_position.close_datetime,
+            "datetime": closed_position.close_datetime,
             "pnl": pnl,
             "cumulative_pnl": self.cumulative_pnl,
             "max_drawdown": self.max_drawdown,

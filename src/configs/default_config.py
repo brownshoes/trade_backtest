@@ -10,9 +10,9 @@ from customization.buy_sell_strategies.exit_strategies import LimitExitPercentAb
 # Indicators
 supertrend = Supertrend("15m")
 
-config = Config(
+default_config = Config(
     # === Identifiers ===
-    name = "Test Config",               # Name of the config
+    name = "Default Config",            # Name of the config
     
     # === Execution Settings ===
     mode="BACKTEST",                    # Operation mode: BACKTEST, LIVE, or PAPER

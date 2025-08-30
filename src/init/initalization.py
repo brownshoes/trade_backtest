@@ -86,6 +86,13 @@ def backtest_init(config: Config):
     backtest = Backtest(config)
     backtest.execute(df)
 
+@timeit
+def flask_init():
+    config_module_name = "configs.test"
+    #setup_logger("flask")
+    create_directories()
+    config = load_config(config_module_name)
+    backtest_init(config)
 
 def init(config_module_name: str):
     """

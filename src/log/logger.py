@@ -67,8 +67,11 @@ def setup_logger(file_name, mode="On"):
     file_handler.setFormatter(file_formatter)       # ANSI codes removed
     console_handler.setFormatter(console_formatter) # ANSI codes retained (for colors)
 
-    # Add handlers to the logger
-    logger.addHandler(file_handler)
-    logger.addHandler(console_handler)
+    # Use basicConfig to configure root logger
+    logging.basicConfig(
+        level=logging.DEBUG,
+        handlers=[file_handler, console_handler]
+    )
 
-    return logger
+    #return logger
+    return logging.getLogger(LOGGER_NAME)

@@ -281,3 +281,33 @@ class Statistics:
         ]
 
         return "\n".join(lines)
+    
+    def to_dict(self):
+        return {
+            "total_profit_and_loss": float(self.total_profit_and_loss),
+            "total_profit_and_loss_percent": float(self.total_profit_and_loss_percent),
+            "max_equity_drawdown": float(self.max_equity_drawdown),
+            "max_equity_drawdown_percent": float(self.max_equity_drawdown_percent),
+            "total_fees": float(self.total_fees),
+            "total_trades": self.total_trades,
+            "total_open_trades": self.total_open_trades,
+            "winning_trades": self.winning_trades,
+            "losing_trades": self.losing_trades,
+            "percent_profitable": self.percent_profitable,
+            "avg_profit_and_loss": float(self.avg_profit_and_loss),
+            "avg_profit_and_loss_percent": float(self.avg_profit_and_loss_percent),
+            "avg_winning_trade": float(self.avg_winning_trade),
+            "avg_winning_trade_percent": float(self.avg_winning_trade_percent),
+            "avg_losing_trade": float(self.avg_losing_trade),
+            "avg_losing_trade_percent": float(self.avg_losing_trade_percent),
+            "ratio_avg_win_to_loss": float(self.ratio_avg_win_to_loss),
+            "largest_winning_trade": float(self.largest_winning_trade),
+            "largest_winning_trade_percent": float(self.largest_winning_trade_percent),
+            "largest_losing_trade": float(self.largest_losing_trade),
+            "largest_losing_trade_percent": float(self.largest_losing_trade_percent),
+            "avg_num_bars_in_trades": self.avg_num_bars_in_trades,
+            "avg_num_bars_in_winning_trades": self.avg_num_bars_in_winning_trades,
+            "avg_num_bars_in_losing_trades": self.avg_num_bars_in_losing_trades,
+            "sharpe_ratio": self.sharpe_ratio,
+            "sortino_ratio": self.sortino_ratio
+        }

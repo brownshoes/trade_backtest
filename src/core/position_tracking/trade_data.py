@@ -104,3 +104,21 @@ class TradeResult:
         ]
 
         return "\n".join(lines)
+    
+    def to_dict(self):
+        return {
+            "entry_price": float(self.entry_price),
+            "exit_price": float(self.exit_price),
+            "quantity": float(self.quantity),
+            "fee": float(self.fee),
+            "entry_datetime": self.entry_datetime,
+            "exit_datetime": self.exit_datetime,
+            "percent_of_position": float(self.percent_of_position),
+            "total_position_percent_sold": float(self.total_position_percent_sold),
+            "run_up_dollar": float(self.run_up_dollar),
+            "run_up_pct": float(self.run_up_pct),
+            "drawdown_dollar": float(self.drawdown_dollar),
+            "drawdown_pct": float(self.drawdown_pct),
+            "profit_and_loss": float(self.profit_and_loss),
+            "profit_and_loss_pct": float(self.profit_and_loss_pct),
+        }

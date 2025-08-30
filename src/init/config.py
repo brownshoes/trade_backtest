@@ -24,6 +24,7 @@ class Config:
     def __init__(
         self,
         # === Core Settings ===
+        name: str,
         mode: str,
         trade: bool,
         start_time: str,
@@ -57,6 +58,7 @@ class Config:
 
     ):
         # === Store Basic Configuration ===
+        self.name = name
         self.mode = mode.upper()
         self.trade = trade
         self.start_time = start_time
