@@ -6,14 +6,196 @@ from init.flask_init import default_startup, container, flask_backtest, DEFAULT_
 
 from core.position_tracking.statistics import Statistics
 
+import plotly.express as px
+import pandas as pd
+import plotly.graph_objects as go
+
 
 
 from log.logger import setup_logger
 #from log.logger import setup_logger
-log = setup_logger("Flask", mode="one")
+log = setup_logger("Flask", mode="off")
 default_startup()
 
 app = Flask(__name__)
+
+
+
+import pandas as pd
+import plotly.graph_objs as go
+from flask import Flask, render_template
+import plotly.offline as pyo
+
+app = Flask(__name__)
+
+@app.route('/test2')
+def test2():
+    config = flask_backtest(DEFAULT_CONFIG, container.curr_df)
+    trading_state = config.trading_state
+    closed_positions = [cp.to_dict() for cp in trading_state.closed_positions]
+
+    df = pd.DataFrame(closed_positions)
+    df['close_datetime'] = pd.to_datetime(df['close_datetime'])
+    df.sort_values('close_datetime', inplace=True)
+    df.reset_index(drop=True, inplace=True)
+
+    # Use trade index as x-axis
+    df['trade_index'] = df.index
+
+    # Colors for profit and loss bars
+    bar_colors = ['green' if pnl >= 0 else 'red' for pnl in df['profit_and_loss']]
+
+    pnl_bars = go.Bar(
+        x=df['trade_index'],
+        y=df['profit_and_loss'],
+        marker_color=bar_colors,
+        name='P&L',
+        width=0.98
+    )
+
+    runup_bars = go.Bar(
+        x=df['trade_index'],
+        y=df['run_up'],
+        marker_color='lightgreen',
+        name='Run-up',
+        opacity=0.4
+    )
+
+    drawdown_bars = go.Bar(
+        x=df['trade_index'],
+        y=df['drawdown'],
+        marker_color='lightcoral',
+        name='Drawdown',
+        opacity=0.4
+    )
+
+    equity_line = go.Scatter(
+        x=df['trade_index'],
+        y=df['cumulative_profit_and_loss'],
+        mode='lines+markers',
+        name='Equity Curve',
+        line=dict(color='darkred')
+    )
+
+    # Create timeline labels for secondary x-axis (dates formatted)
+    timeline_labels = df['close_datetime'].dt.strftime('%Y-%m-%d').tolist()
+
+    layout = go.Layout(
+        title='Trading Strategy Performance',
+        barmode='overlay',
+        bargap=0.0,       # no gaps between groups
+        bargroupgap=0.0,  # no gaps inside groups
+        width=1400,
+        height=700,
+        xaxis=dict(
+            title='Trade Number',
+            tickmode='array',
+            tickvals=df['trade_index'],
+            ticktext=[str(i+1) for i in df['trade_index']],  # Show trade # starting at 1
+            showgrid=False,
+        ),
+        xaxis2=dict(
+            title='Trade Close Date',
+            overlaying='x',
+            side='bottom',
+            tickmode='array',
+            tickvals=df['trade_index'],
+            ticktext=timeline_labels,
+            tickangle=45,
+            showgrid=False,
+            showline=True,
+            linewidth=1,
+            linecolor='black',
+            ticks='outside',
+            ticklen=8,
+        ),
+        yaxis=dict(
+            title='Profit / Amount',
+        ),
+        legend=dict(orientation='h'),
+        template='plotly_white',
+        margin=dict(b=100)  # Extra bottom margin for date labels
+    )
+
+    data = [runup_bars, drawdown_bars, pnl_bars, equity_line]
+    fig = go.Figure(data=data, layout=layout)
+
+    plot_html = pyo.plot(fig, output_type='div')
+
+    return render_template('test2.html', plot_html=plot_html)
+
+
+@app.route('/test')
+def test():
+    # # Placeholder data for your chart (you will replace this with your actual data)
+    # data = {
+    #     'date': pd.date_range(start='2025-04-30', periods=61, freq='D'),
+    #     'profit': [50, -30, 40, -60, 20, 90, -20, -50, 30, 10, 50, -70, -20, 10, 80, 40, 10, -60, 90, -10, 40, 10, 20, 10, -80, 50, -10, -30, 50, 20, -40, 30, 10, 50, -20, -30, 10, -20, 60, 20, -50, 30, -70, 40, 20, -20, 30, 10, -50, 40, -20, -40, 50, 10, -20, 30, -50, -10, 20, 10, 15],
+    #     'cumulative_profit': [50, 20, 60, 0, 20, 110, 90, 40, 70, 80, 130, 60, 40, 50, 130, 170, 180, 120, 210, 200, 240, 250, 270, 280, 200, 250, 240, 210, 260, 280, 240, 270, 260, 300, 280, 250, 260, 240, 300, 320, 270, 300, 230, 270, 290, 270, 300, 310, 260, 300, 260, 230, 280, 290, 270, 300, 250, 240, 260, 270, 280]
+    # }
+
+    
+    # Original 61 profit values
+    base_profits = [
+        50, -30, 40, -60, 20, 90, -20, -50, 30, 10,
+        50, -70, -20, 10, 80, 40, 10, -60, 90, -10,
+        40, 10, 20, 10, -80, 50, -10, -30, 50, 20,
+        -40, 30, 10, 50, -20, -30, 10, -20, 60, 20,
+        -50, 30, -70, 40, 20, -20, 30, 10, -50, 40,
+        -20, -40, 50, 10, -20, 30, -50, -10, 20, 10, 15
+    ]
+
+    # Repeat pattern to get 300 values
+    profit = base_profits * 4 + base_profits[:56]  # 61*4 + 56 = 300
+
+    # Calculate cumulative profit
+    cumulative_profit = pd.Series(profit).cumsum().tolist()
+
+    # Create DataFrame
+    data = pd.DataFrame({
+        'date': pd.date_range(start='2025-04-30', periods=300, freq='D'),
+        'profit': profit,
+        'cumulative_profit': cumulative_profit
+    })
+
+    #    Check the lengths of the lists
+    print(len(data['date']), len(data['profit']), len(data['cumulative_profit']))
+
+    data = pd.DataFrame({
+        'date': pd.date_range(start='2025-04-30', periods=300, freq='D'),
+        'profit': profit,
+        'cumulative_profit': cumulative_profit
+    })
+
+    df = pd.DataFrame(data)
+
+    # Create the figure
+    fig = go.Figure()
+
+    # Add the cumulative profit line
+    fig.add_trace(go.Scatter(x=df['date'], y=df['cumulative_profit'], mode='lines', name='Cumulative Profit', line=dict(color='blue')))
+
+    # Add the profit bars, setting color based on whether profit is positive or negative
+    fig.add_trace(go.Bar(
+        x=df['date'],
+        y=df['profit'],
+        name='Profit',
+        marker=dict(color=['green' if p > 0 else 'red' for p in df['profit']]),
+    ))
+
+    # Update layout: Remove dark theme and set title and labels
+    fig.update_layout(
+        title='Profit Over Time',
+        xaxis_title='Date',
+        yaxis_title='Profit',
+        template='plotly',
+        showlegend=True
+    )
+
+    # Convert plot to HTML
+    graph_html = fig.to_html(full_html=False)
+
+    return render_template('test.html', graph_html=graph_html)
 
 
 def calculate_sma(data, period=5):

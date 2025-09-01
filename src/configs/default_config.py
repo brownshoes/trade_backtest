@@ -19,7 +19,7 @@ default_config = Config(
     trade=True,                         # If True, trading actions are executed
 
     # === Backtest Time Range ===
-    start_time="2024-01-01 00:00",      # Start datetime of the backtest period
+    start_time="2024-07-01 00:00",      # Start datetime of the backtest period
     end_time="2024-10-01 00:00",        # End datetime of the backtest period
 
     # === Initial Portfolio Holdings ===
