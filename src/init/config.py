@@ -1,5 +1,6 @@
 from datetime import datetime
 import inspect
+import json
 
 from core.exchange_state import ExchangeState
 from core.position_tracking.trading_state import TradingState
@@ -137,6 +138,9 @@ class Config:
 
         # === Final Checks ===
         self.checks()
+
+    def to_json(self):
+        return json.dumps(self.__dict__, default=str, indent=4)
 
     def init_time_series(self, time_series_size):
         return [TimeSeries(candle_size=x) for x in time_series_size]

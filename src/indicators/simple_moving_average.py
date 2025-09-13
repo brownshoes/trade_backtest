@@ -11,8 +11,6 @@ class SimpleMovingAverage:
         self.sma_name = f"SMA {self.sma_length}"
         self.sma = Series(self.sma_name, self.time_series, smoothing=self.smoothing)
 
-        self.sma_line_color = "black"
-
     def populate(self):
         sma = ta.sma(self.time_series.df["Close"], self.sma_length)
         self.sma.populate(sma)

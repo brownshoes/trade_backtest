@@ -1,5 +1,6 @@
 import os
 import importlib
+import json
 
 from init.config import Config  
 
@@ -10,9 +11,15 @@ from utils.candle import Candle
 
 from decorators.timeit import timeit
 
+from database.db_setup import init_db
+
 import logging
 from log.logger import LOGGER_NAME, setup_logger
 logger = logging.getLogger(LOGGER_NAME)
+
+import jsonpickle
+
+from configs.create_config import create_config_from_json, config_to_json
 
 
 directories = ["log\\logs"]
@@ -94,12 +101,59 @@ def flask_init():
     config = load_config(config_module_name)
     backtest_init(config)
 
-def init(config_module_name: str):
-    """
-    Entry point initialization: setup logger, directories, and load config.
-    """
-    setup_logger(config_module_name)
+def test_config_storage(config):
+    json = config.to_json()
+    print(json)
+
+    # Encode the object
+    json_str = jsonpickle.encode(config, indent=4)
+    print(json_str)
+
+    obj_restored = jsonpickle.decode(json_str)
+    print(obj_restored.name) 
+
+def init_test(file_name):
+        with open(file_name, 'r') as f:
+            json_data = json.load(f)
+
+
+        config = create_config_from_json(json_data)
+        print(config.to_json())
+        setup_logger(config.name, mode="off")
+
+        create_directories()
+        backtest_init(config)
+
+def init_test2(config_module_name: str):
+
+    setup_logger(config_module_name, mode="off")
+
+    init_db()
+    
     create_directories()
     config = load_config(config_module_name)
-    backtest_init(config)
-    return config
+
+    json_config = config_to_json(config)
+    print(json.dumps(json_config, default=str, indent=4))
+
+    config_from_json = create_config_from_json(json_config)
+
+    create_directories()
+    backtest_init(config_from_json)
+
+
+def init(config_module_name: str):
+    """
+    Entry point initialization: setup logger, directories, load config, database.
+    """
+    setup_logger(config_module_name, mode="off")
+
+    init_db()
+    
+    create_directories()
+    config = load_config(config_module_name)
+    test_config_storage(config)
+
+
+    # backtest_init(config)
+    # return config

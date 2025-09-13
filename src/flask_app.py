@@ -10,11 +10,16 @@ import plotly.express as px
 import pandas as pd
 import plotly.graph_objects as go
 
+from database.db_setup import init_db
+
 
 
 from log.logger import setup_logger
 #from log.logger import setup_logger
 log = setup_logger("Flask", mode="off")
+
+init_db()
+
 default_startup()
 
 app = Flask(__name__)
@@ -33,6 +38,8 @@ def test2():
     config = flask_backtest(DEFAULT_CONFIG, container.curr_df)
     trading_state = config.trading_state
     closed_positions = [cp.to_dict() for cp in trading_state.closed_positions]
+    statistics = Statistics(trading_state, config.main_time_series.candle_size)
+    metrics = statistics.to_dict()
 
     df = pd.DataFrame(closed_positions)
     df['close_datetime'] = pd.to_datetime(df['close_datetime'])
@@ -80,12 +87,14 @@ def test2():
     # Create timeline labels for secondary x-axis (dates formatted)
     timeline_labels = df['close_datetime'].dt.strftime('%Y-%m-%d').tolist()
 
+    chart_width = max(1400, len(df) * 50)
+
     layout = go.Layout(
         title='Trading Strategy Performance',
         barmode='overlay',
         bargap=0.0,       # no gaps between groups
         bargroupgap=0.0,  # no gaps inside groups
-        width=1400,
+        width=chart_width,
         height=700,
         xaxis=dict(
             title='Trade Number',
@@ -121,8 +130,16 @@ def test2():
     fig = go.Figure(data=data, layout=layout)
 
     plot_html = pyo.plot(fig, output_type='div')
+    
+    PIXELS_PER_TRADE = 50
+    MAX_VISIBLE_TRADES = 100
+    chart_width = len(df) * PIXELS_PER_TRADE
+    visible_window_width = MAX_VISIBLE_TRADES * PIXELS_PER_TRADE
+    enable_scroll = len(df) > MAX_VISIBLE_TRADES
 
-    return render_template('test2.html', plot_html=plot_html)
+
+    #return render_template('test2.html', plot_html=plot_html)
+    return render_template('test2.html', plot_html=plot_html, metrics=metrics, positions=closed_positions, enable_scroll=enable_scroll, visible_window_width=visible_window_width)
 
 
 @app.route('/test')

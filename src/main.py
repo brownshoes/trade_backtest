@@ -1,6 +1,9 @@
 import argparse
+import json
 
-from init.initalization import init, load_config, load_csv
+from init.initalization import init, load_config, load_csv, init_test, init_test2
+
+from configs.create_config import create_config_from_json
 
 import logging
 from log.logger import LOGGER_NAME
@@ -15,8 +18,11 @@ def main():
     )
 
     args = parser.parse_args()
+    config = init_test2(args.config)
 
-    config = init(args.config)
+    #config = init(args.config)
+
+    #init_test('configs/config_test.json')
     #print(config)
 
 
