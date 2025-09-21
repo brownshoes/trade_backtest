@@ -118,6 +118,57 @@
         <button type="button" onclick="addExitRule()">+ Add Exit Rule</button>
         <input type="hidden" name="num_exit_rules" id="num_exit_rules" value="{{ config.identify_exit | length }}">
 
+        <h2>Entry Trade Conditions</h2>
+        <div id="entry-trade-conditions-container">
+            {% for condition in config.entry_trade_conditions %}
+                <!-- Render existing blocks via JS or initially with server data -->
+            {% endfor %}
+        </div>
+        <button type="button" onclick="addEntryTradeCondition()">+ Add Entry Trade Condition</button>
+        <input type="hidden" id="num_entry_trade_conditions" name="num_entry_trade_conditions" value="{{ config.entry_trade_conditions | length }}">
+
+        <h2>Exit Trade Conditions</h2>
+        <div id="exit-trade-conditions-container">
+            {% for condition in config.exit_trade_conditions %}
+                <!-- Render existing blocks via JS or initially with server data -->
+            {% endfor %}
+        </div>
+        <button type="button" onclick="addExitTradeCondition()">+ Add Exit Trade Condition</button>
+        <input type="hidden" id="num_exit_trade_conditions" name="num_exit_trade_conditions" value="{{ config.exit_trade_conditions | length }}">
+
+
+        <!-- <h2>Entry Trade Conditions</h2>
+        <div id="entry-trade-conditions-container">
+            {% for cond in config.entry_trade_conditions %}
+                {% set i = loop.index0 %}
+                <div class="entry-trade-condition-block" data-index="{{ i }}">
+                    <select name="entry_trade_condition_type_{{ i }}">
+                        {% for cond_type in entry_condition_classes %}
+                            <option value="{{ cond_type }}" {% if cond.type == cond_type %}selected{% endif %}>{{ cond_type }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            {% endfor %}
+        </div>
+        <button type="button" onclick="addEntryTradeCondition()">+ Add Entry Trade Condition</button>
+        <input type="hidden" name="num_entry_conditions" id="num_entry_conditions" value="{{ config.entry_trade_conditions | length }}">
+
+        <h2>Exit Trade Conditions</h2>
+        <div id="exit-trade-conditions-container">
+            {% for cond in config.exit_trade_conditions %}
+                {% set i = loop.index0 %}
+                <div class="exit-trade-condition-block" data-index="{{ i }}">
+                    <select name="exit_trade_condition_type_{{ i }}">
+                        {% for cond_type in exit_condition_classes %}
+                            <option value="{{ cond_type }}" {% if cond.type == cond_type %}selected{% endif %}>{{ cond_type }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            {% endfor %}
+        </div>
+        <button type="button" onclick="addExitTradeCondition()">+ Add Exit Trade Condition</button>
+        <input type="hidden" name="num_exit_conditions" id="num_exit_conditions" value="{{ config.exit_trade_conditions | length }}"> -->
+
         <button type="submit">Save Config</button>
     </form>
 
@@ -126,77 +177,150 @@
     <pre>{{ config | tojson(indent=4) }}</pre>
 
     <script>
-    const indicatorClasses = {{ indicator_classes | tojson }};
-    let indicatorCount = {{ config.indicators | length }};
+        function createConfigBlock(configType, typeMap, index, prefix) {
+            const container = document.createElement('div');
+            container.className = `${configType}-block`;
+            container.dataset.index = index;
 
-    function createIndicatorBlock(index, selectedType = null, args = []) {
-        const container = document.createElement('div');
-        container.className = 'indicator-block';
-        container.dataset.index = index;
+            const select = document.createElement('select');
+            select.name = `${prefix}_type_${index}`;
+            select.className = `${configType}-select`;
+            select.dataset.index = index;
 
-        // Dropdown
-        const select = document.createElement('select');
-        select.name = `indicator_type_${index}`;
-        select.className = 'indicator-select';
-        select.dataset.index = index;
-        select.onchange = function() { updateArgsFields(index); };
+            Object.keys(typeMap).forEach(type => {
+                const option = document.createElement('option');
+                option.value = type;
+                option.text = type;
+                select.appendChild(option);
+            });
 
-        for (let type in indicatorClasses) {
-            const option = document.createElement('option');
-            option.value = type;
-            option.text = type;
-            if (selectedType === type) option.selected = true;
-            select.appendChild(option);
+            container.appendChild(document.createTextNode("Type: "));
+            container.appendChild(select);
+
+            const argsDiv = document.createElement('div');
+            argsDiv.id = `${prefix}_args_${index}`;
+            argsDiv.className = `${configType}-args`;
+            container.appendChild(argsDiv);
+
+            // Add event listener
+            select.addEventListener('change', () => {
+                updateArgsFields(typeMap, prefix, index);
+            });
+
+            return container;
         }
 
-        container.appendChild(document.createTextNode("Type:"));
-        container.appendChild(select);
 
-        // Args inputs
-        const argsDiv = document.createElement('div');
-        argsDiv.id = `args_${index}`;
-        argsDiv.className = 'indicator-args';
+        function updateArgsFields(typeMap, prefix, index) {
+            const select = document.querySelector(`select[name='${prefix}_type_${index}']`);
+            const selectedType = select.value;
+            const argsDiv = document.getElementById(`${prefix}_args_${index}`);
+            argsDiv.innerHTML = '';
 
-        const typeToUse = selectedType || select.value;
-        const paramNames = indicatorClasses[typeToUse] || [];
+            const paramNames = typeMap[selectedType] || [];
+            paramNames.forEach(param => {
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.name = `${prefix}_arg_${index}_${param}`;
+                input.placeholder = param;
+                argsDiv.appendChild(input);
+            });
+        }
 
-        paramNames.forEach((param, i) => {
-            const input = document.createElement('input');
-            input.type = 'text';
-            input.name = `indicator_args_${index}`;
-            input.placeholder = param;
-            input.value = args[i] || '';
-            argsDiv.appendChild(input);
-        });
+        let indicatorCount = {{ config.indicators | length }};
+        const indicatorClasses = {{ indicator_classes | tojson }};
 
-        container.appendChild(argsDiv);
+        function addIndicator() {
+            const container = document.getElementById('indicators-container');
+            const block = createConfigBlock('indicator', indicatorClasses, indicatorCount, 'indicator');
+            container.appendChild(block);
+            updateArgsFields(indicatorClasses, 'indicator', indicatorCount);
+            document.getElementById('num_indicators').value = ++indicatorCount;
+        }
 
-        return container;
-    }
 
-    function updateArgsFields(index) {
-        const select = document.querySelector(`select[name='indicator_type_${index}']`);
-        const selectedType = select.value;
-        const argsDiv = document.getElementById(`args_${index}`);
-        argsDiv.innerHTML = '';
 
-        const paramNames = indicatorClasses[selectedType];
-        paramNames.forEach(param => {
-            const input = document.createElement('input');
-            input.type = 'text';
-            input.name = `indicator_args_${index}`;
-            input.placeholder = param;
-            argsDiv.appendChild(input);
-        });
-    }
 
-    function addIndicator() {
-        const container = document.getElementById('indicators-container');
-        const newBlock = createIndicatorBlock(indicatorCount);
-        container.appendChild(newBlock);
-        indicatorCount += 1;
-        document.getElementById('num_indicators').value = indicatorCount;
-    }
+
+
+
+
+
+
+
+
+
+    // const indicatorClasses = {{ indicator_classes | tojson }};
+    // let indicatorCount = {{ config.indicators | length }};
+
+    // function createIndicatorBlock(index, selectedType = null, args = []) {
+    //     const container = document.createElement('div');
+    //     container.className = 'indicator-block';
+    //     container.dataset.index = index;
+
+    //     // Dropdown
+    //     const select = document.createElement('select');
+    //     select.name = `indicator_type_${index}`;
+    //     select.className = 'indicator-select';
+    //     select.dataset.index = index;
+    //     select.onchange = function() { updateArgsFields(index); };
+
+    //     for (let type in indicatorClasses) {
+    //         const option = document.createElement('option');
+    //         option.value = type;
+    //         option.text = type;
+    //         if (selectedType === type) option.selected = true;
+    //         select.appendChild(option);
+    //     }
+
+    //     container.appendChild(document.createTextNode("Type:"));
+    //     container.appendChild(select);
+
+    //     // Args inputs
+    //     const argsDiv = document.createElement('div');
+    //     argsDiv.id = `args_${index}`;
+    //     argsDiv.className = 'indicator-args';
+
+    //     const typeToUse = selectedType || select.value;
+    //     const paramNames = indicatorClasses[typeToUse] || [];
+
+    //     paramNames.forEach((param, i) => {
+    //         const input = document.createElement('input');
+    //         input.type = 'text';
+    //         input.name = `indicator_args_${index}`;
+    //         input.placeholder = param;
+    //         input.value = args[i] || '';
+    //         argsDiv.appendChild(input);
+    //     });
+
+    //     container.appendChild(argsDiv);
+
+    //     return container;
+    // }
+
+    // function updateArgsFields(index) {
+    //     const select = document.querySelector(`select[name='indicator_type_${index}']`);
+    //     const selectedType = select.value;
+    //     const argsDiv = document.getElementById(`args_${index}`);
+    //     argsDiv.innerHTML = '';
+
+    //     const paramNames = indicatorClasses[selectedType];
+    //     paramNames.forEach(param => {
+    //         const input = document.createElement('input');
+    //         input.type = 'text';
+    //         input.name = `indicator_args_${index}`;
+    //         input.placeholder = param;
+    //         argsDiv.appendChild(input);
+    //     });
+    // }
+
+    // function addIndicator() {
+    //     const container = document.getElementById('indicators-container');
+    //     const newBlock = createIndicatorBlock(indicatorCount);
+    //     container.appendChild(newBlock);
+    //     indicatorCount += 1;
+    //     document.getElementById('num_indicators').value = indicatorCount;
+    // }
 
     let entryRuleCount = {{ config.identify_entry | length }};
     let exitRuleCount = {{ config.identify_exit | length }};
@@ -260,6 +384,81 @@
         exitRuleCount += 1;
         document.getElementById('num_exit_rules').value = exitRuleCount;
     }
+
+    let entryTradeConditionCount = {{ config.entry_trade_conditions | length }};
+    const entryConditionTypes = {{ entry_condition_classes | tojson }};
+
+    function addEntryTradeCondition() {
+        const container = document.getElementById('entry-trade-conditions-container');
+        const block = createConfigBlock('entry-trade-condition', entryConditionTypes, entryTradeConditionCount, 'entry_trade_condition');
+        container.appendChild(block);
+        updateArgsFields(entryConditionTypes, 'entry_trade_condition', entryTradeConditionCount);
+        document.getElementById('num_entry_trade_conditions').value = ++entryTradeConditionCount;
+    }
+
+
+    let exitTradeConditionCount = {{ config.exit_trade_conditions | length }};
+    const exitConditionTypes = {{ exit_condition_classes | tojson }};
+
+    function addExitTradeCondition() {
+        const container = document.getElementById('exit-trade-conditions-container');
+        const block = createConfigBlock('exit-trade-condition', exitConditionTypes, exitTradeConditionCount, 'exit_trade_condition');
+        container.appendChild(block);
+        updateArgsFields(entryConditionTypes, 'exit-trade-condition', entryTradeConditionCount);
+        document.getElementById('num_exit_trade_conditions').value = ++exitTradeConditionCount;
+    }
+
+
+
+    // let entryTradeConditionCount = {{ config.entry_trade_conditions | length }};
+    // let exitTradeConditionCount = {{ config.exit_trade_conditions | length }};
+    // const entryConditionTypes = {{ entry_condition_classes | tojson }};
+    // const exitConditionTypes = {{ exit_condition_classes | tojson }};
+
+    // function addEntryTradeCondition() {
+    //     const container = document.getElementById('entry-trade-conditions-container');
+    //     const div = document.createElement('div');
+    //     div.className = 'entry-trade-condition-block';
+    //     div.dataset.index = entryTradeConditionCount;
+
+    //     const select = document.createElement('select');
+    //     select.name = `entry_trade_condition_type_${entryTradeConditionCount}`;
+    //     entryConditionTypes.forEach(type => {
+    //         const option = document.createElement('option');
+    //         option.value = type;
+    //         option.text = type;
+    //         select.appendChild(option);
+    //     });
+
+    //     div.appendChild(select);
+    //     container.appendChild(div);
+
+    //     entryTradeConditionCount += 1;
+    //     document.getElementById('num_entry_conditions').value = entryTradeConditionCount;
+    // }
+
+    // function addExitTradeCondition() {
+    //     const container = document.getElementById('exit-trade-conditions-container');
+    //     const div = document.createElement('div');
+    //     div.className = 'exit-trade-condition-block';
+    //     div.dataset.index = exitTradeConditionCount;
+
+    //     const select = document.createElement('select');
+    //     select.name = `exit_trade_condition_type_${exitTradeConditionCount}`;
+    //     exitConditionTypes.forEach(type => {
+    //         const option = document.createElement('option');
+    //         option.value = type;
+    //         option.text = type;
+    //         select.appendChild(option);
+    //     });
+
+    //     div.appendChild(select);
+    //     container.appendChild(div);
+
+    //     exitTradeConditionCount += 1;
+    //     document.getElementById('num_exit_conditions').value = exitTradeConditionCount;
+    // }
+
 
     </script>
 </body>

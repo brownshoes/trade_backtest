@@ -3,7 +3,7 @@ import json
 
 from init.flask_init import DEFAULT_CONFIG
 from indicators.indicator_classes import INDICATOR_CLASSES
-from customization.customization_classes import IDENTIFY_ENTRY_CLASSES, IDENTIFY_EXIT_CLASSES
+from customization.customization_classes import IDENTIFY_ENTRY_CLASSES, IDENTIFY_EXIT_CLASSES,ENTRY_TRADE_CONDITIONS_CLASSES,EXIT_TRADE_CONDITIONS_CLASSES,EXIT_STRATEGIES_CLASSES
 
 from log.logger import setup_logger
 log = setup_logger("Flask", mode="off")
@@ -65,6 +65,26 @@ def config():
             identify_exit.append({"type": rule_type, "indicator_ref_index": indicator_idx})
         config_data['identify_exit'] = identify_exit
 
+        # Handle entry_trade_conditions
+        entry_trade_conditions = []
+        num_entry_conditions = int(request.form.get('num_entry_conditions', 0))
+        for i in range(num_entry_conditions):
+            cond_type = request.form.get(f'entry_trade_condition_type_{i}')
+            if cond_type:
+                entry_trade_conditions.append({"type": cond_type})
+        config_data['entry_trade_conditions'] = entry_trade_conditions
+
+        # Handle exit_trade_conditions
+        exit_trade_conditions = []
+        num_exit_conditions = int(request.form.get('num_exit_conditions', 0))
+        for i in range(num_exit_conditions):
+            cond_type = request.form.get(f'exit_trade_condition_type_{i}')
+            if cond_type:
+                exit_trade_conditions.append({"type": cond_type})
+        config_data['exit_trade_conditions'] = exit_trade_conditions
+
+        
+
 
         # Optional: Save to file
         with open('config.json', 'w') as f:
@@ -77,7 +97,9 @@ def config():
         config=config_data,
         indicator_classes=INDICATOR_CLASSES,
         identify_entry_classes=IDENTIFY_ENTRY_CLASSES,
-        identify_exit_classes=IDENTIFY_EXIT_CLASSES
+        identify_exit_classes=IDENTIFY_EXIT_CLASSES,
+        entry_condition_classes=ENTRY_TRADE_CONDITIONS_CLASSES,
+        exit_condition_classes=EXIT_TRADE_CONDITIONS_CLASSES
     )
 
 
