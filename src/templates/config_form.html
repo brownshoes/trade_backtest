@@ -54,69 +54,35 @@
         <h2>Indicators</h2>
         <div id="indicators-container">
             {% for ind in config.indicators %}
-                {% set i = loop.index0 %}
-                <div class="indicator-block" data-index="{{ i }}">
-                    <label>Type:</label>
-                    <select name="indicator_type_{{ i }}" class="indicator-select" data-index="{{ i }}" onchange="updateArgsFields({{ i }})">
-                        {% for ind_type in indicator_classes %}
-                            <option value="{{ ind_type }}" {% if ind.type == ind_type %}selected{% endif %}>{{ ind_type }}</option>
-                        {% endfor %}
-                    </select>
-
-                    <div class="indicator-args" id="args_{{ i }}">
-                        {% set arg_schema = indicator_classes[ind.type] %}
-                        {% for param in arg_schema %}
-                            {% set j = loop.index0 %}
-                            <input type="text" name="indicator_args_{{ i }}" placeholder="{{ param }}" value="{{ ind.args[j] if j < ind.args | length else '' }}">
-                        {% endfor %}
-                    </div>
-                </div>
+                <!-- Existing indicators will be rendered via JS or server-side data -->
             {% endfor %}
         </div>
-
         <button type="button" onclick="addIndicator()">+ Add Indicator</button>
-        <input type="hidden" name="num_indicators" id="num_indicators" value="{{ config.indicators | length }}">
+        <input type="hidden" id="num-indicators" name="num_indicators"  value="{{ config.indicators | length }}">
 
         <hr>
 
-        <hr>
-        <h2>Identify Entry Rules</h2>
-        <div id="entry-rules-container">
+        <h2>Identify Entries</h2>
+        <div id="identify-entry-container"></div>
+        <button type="button" onclick="addIdentifyEntry()">+ Add Identify Entry</button>
+        <input type="hidden" id="num-identify-entries" name="num_identify_entries" value="0">
+
+        <h2>Identify Exits</h2>
+        <div id="identify_exit-container"></div>
+        <button type="button" onclick="addIdentifyExit()">+ Add Identify Exit</button>
+        <input type="hidden" id="num-identify_exits" name="num_identify_exits" value="0">
+
+
+
+        <!-- <h2>Identify Entry</h2>
+        <div id="identify-entry-container">
             {% for rule in config.identify_entry %}
-                {% set i = loop.index0 %}
-                <div class="entry-rule-block" data-index="{{ i }}">
-                    <select name="entry_type_{{ i }}">
-                        {% for entry_type in identify_entry_classes %}
-                            <option value="{{ entry_type }}" {% if rule.type == entry_type %}selected{% endif %}>{{ entry_type }}</option>
-                        {% endfor %}
-                    </select>
-
-                    <label>Indicator Index:</label>
-                    <input type="number" name="entry_indicator_index_{{ i }}" value="{{ rule.indicator_ref_index }}">
-                </div>
-            {% endfor %}
+                
+         {% endfor %}
         </div>
-        <button type="button" onclick="addEntryRule()">+ Add Entry Rule</button>
-        <input type="hidden" name="num_entry_rules" id="num_entry_rules" value="{{ config.identify_entry | length }}">
-
-        <h2>Identify Exit Rules</h2>
-        <div id="exit-rules-container">
-            {% for rule in config.identify_exit %}
-                {% set i = loop.index0 %}
-                <div class="exit-rule-block" data-index="{{ i }}">
-                    <select name="exit_type_{{ i }}">
-                        {% for exit_type in identify_exit_classes %}
-                            <option value="{{ exit_type }}" {% if rule.type == exit_type %}selected{% endif %}>{{ exit_type }}</option>
-                        {% endfor %}
-                    </select>
-
-                    <label>Indicator Index:</label>
-                    <input type="number" name="exit_indicator_index_{{ i }}" value="{{ rule.indicator_ref_index }}">
-                </div>
-            {% endfor %}
-        </div>
-        <button type="button" onclick="addExitRule()">+ Add Exit Rule</button>
-        <input type="hidden" name="num_exit_rules" id="num_exit_rules" value="{{ config.identify_exit | length }}">
+        <button type="button" onclick="addIdentifyEntry()">+ Add Entry</button>
+        <input type="hidden" id="num-identify-entry" name="num_identify_entry" value="{{ config.identify_entry | length }}">
+ --> 
 
         <h2>Entry Trade Conditions</h2>
         <div id="entry-trade-conditions-container">
@@ -125,7 +91,8 @@
             {% endfor %}
         </div>
         <button type="button" onclick="addEntryTradeCondition()">+ Add Entry Trade Condition</button>
-        <input type="hidden" id="num_entry_trade_conditions" name="num_entry_trade_conditions" value="{{ config.entry_trade_conditions | length }}">
+        <input type="hidden" id="num-entry-trade-conditions" name="num_entry_trade_conditions" value="{{ config.entry_trade_conditions | length }}">
+
 
         <h2>Exit Trade Conditions</h2>
         <div id="exit-trade-conditions-container">
@@ -134,40 +101,28 @@
             {% endfor %}
         </div>
         <button type="button" onclick="addExitTradeCondition()">+ Add Exit Trade Condition</button>
-        <input type="hidden" id="num_exit_trade_conditions" name="num_exit_trade_conditions" value="{{ config.exit_trade_conditions | length }}">
+        <input type="hidden" id="num-exit-trade-conditions" name="num_exit_trade_conditions" value="{{ config.exit_trade_conditions | length }}">
 
 
-        <!-- <h2>Entry Trade Conditions</h2>
-        <div id="entry-trade-conditions-container">
-            {% for cond in config.entry_trade_conditions %}
-                {% set i = loop.index0 %}
-                <div class="entry-trade-condition-block" data-index="{{ i }}">
-                    <select name="entry_trade_condition_type_{{ i }}">
-                        {% for cond_type in entry_condition_classes %}
-                            <option value="{{ cond_type }}" {% if cond.type == cond_type %}selected{% endif %}>{{ cond_type }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-            {% endfor %}
-        </div>
-        <button type="button" onclick="addEntryTradeCondition()">+ Add Entry Trade Condition</button>
-        <input type="hidden" name="num_entry_conditions" id="num_entry_conditions" value="{{ config.entry_trade_conditions | length }}">
+        <h2>Buy Strategy</h2>
+        <div id="buy-strategy-container"></div>
+        <input type="hidden" name="has_buy_strategy" value="1">
+        <button type="button" onclick="addBuyStrategy()">+ Select Buy Strategy</button>
 
-        <h2>Exit Trade Conditions</h2>
-        <div id="exit-trade-conditions-container">
-            {% for cond in config.exit_trade_conditions %}
-                {% set i = loop.index0 %}
-                <div class="exit-trade-condition-block" data-index="{{ i }}">
-                    <select name="exit_trade_condition_type_{{ i }}">
-                        {% for cond_type in exit_condition_classes %}
-                            <option value="{{ cond_type }}" {% if cond.type == cond_type %}selected{% endif %}>{{ cond_type }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-            {% endfor %}
-        </div>
-        <button type="button" onclick="addExitTradeCondition()">+ Add Exit Trade Condition</button>
-        <input type="hidden" name="num_exit_conditions" id="num_exit_conditions" value="{{ config.exit_trade_conditions | length }}"> -->
+
+        <h2>Sell Strategy</h2>
+        <div id="sell-strategy-container"></div>
+        <input type="hidden" name="has_sell_strategy" value="1">
+        <button type="button" onclick="addSellStrategy()">+ Select Sell Strategy</button>
+
+
+        <h2>Exit Strategy</h2>
+        <div id="exit-strategy-container"></div>
+        <input type="hidden" name="has_exit_strategy" value="1">
+        <button type="button" onclick="addExitStrategy()">+ Select Exit Strategy</button>
+
+
+        <br><br>
 
         <button type="submit">Save Config</button>
     </form>
@@ -177,7 +132,7 @@
     <pre>{{ config | tojson(indent=4) }}</pre>
 
     <script>
-        function createConfigBlock(configType, typeMap, index, prefix) {
+        function createConfigBlock(configType, typeMap, index, prefix, showRemove = false) {
             const container = document.createElement('div');
             container.className = `${configType}-block`;
             container.dataset.index = index;
@@ -207,6 +162,21 @@
                 updateArgsFields(typeMap, prefix, index);
             });
 
+            // Add remove button if requested
+            if (showRemove) {
+                const removeBtn = document.createElement('button');
+                removeBtn.type = 'button';
+                removeBtn.textContent = 'Remove';
+                removeBtn.className = 'remove-button';
+                removeBtn.style.marginLeft = '10px';
+
+                removeBtn.addEventListener('click', () => {
+                    container.remove();
+                });
+
+                container.appendChild(removeBtn);
+            }
+
             return container;
         }
 
@@ -230,235 +200,124 @@
         let indicatorCount = {{ config.indicators | length }};
         const indicatorClasses = {{ indicator_classes | tojson }};
 
+        // let identifyEntryCount = {{ config.identify_entry | length }};
+        // const identifyEntryTypes = {{ identify_entry_classes | tojson }};
+
+        let entryTradeConditionCount = {{ config.entry_trade_conditions | length }};
+        const entryConditionTypes = {{ entry_condition_classes | tojson }};
+
+        let exitTradeConditionCount = {{ config.exit_trade_conditions | length }};
+        const exitConditionTypes = {{ exit_condition_classes | tojson }};
+
+        const buyStrategyTypes = {{ buy_strategy_classes | tojson }};
+        const sellStrategyTypes = {{ sell_strategy_classes | tojson }};
+        const exitStrategyTypes = {{ exit_strategy_classes | tojson }};
+
         function addIndicator() {
             const container = document.getElementById('indicators-container');
-            const block = createConfigBlock('indicator', indicatorClasses, indicatorCount, 'indicator');
+            const block = createConfigBlock('indicator', indicatorClasses, indicatorCount, 'indicator', true, true);
             container.appendChild(block);
             updateArgsFields(indicatorClasses, 'indicator', indicatorCount);
-            document.getElementById('num_indicators').value = ++indicatorCount;
+            indicatorCount++;
+            document.getElementById('num-indicators').value = indicatorCount;
+        }
+
+        // function addIdentifyEntry() {
+        //     const container = document.getElementById('identify-entry-container');
+        //     const block = createConfigBlock('identify-entry', identifyEntryTypes, identifyEntryCount, 'identify-entry', true);
+        //     container.appendChild(block);
+        //     updateArgsFields(identifyEntryTypes, 'identify-entry', identifyEntryCount);
+        //     document.getElementById('num-identify-entry').value = ++identifyEntryCount;
+        // }
+
+        function addEntryTradeCondition() {
+            const container = document.getElementById('entry-trade-conditions-container');
+            const block = createConfigBlock('entry-trade-condition', entryConditionTypes, entryTradeConditionCount, 'entry-trade-condition', true);
+            container.appendChild(block);
+            updateArgsFields(entryConditionTypes, 'entry-trade-condition', entryTradeConditionCount);
+            document.getElementById('num-entry-trade-conditions').value = ++entryTradeConditionCount;
+        }
+
+        function addExitTradeCondition() {
+            const container = document.getElementById('exit-trade-conditions-container');
+            const block = createConfigBlock('exit-trade-condition', exitConditionTypes, exitTradeConditionCount, 'exit-trade-condition', true);
+            container.appendChild(block);
+            updateArgsFields(exitConditionTypes, 'exit-trade-condition', exitTradeConditionCount);
+            document.getElementById('num-exit-trade-conditions').value = ++exitTradeConditionCount;
+        }
+
+        // These are always single-object blocks, so index is always 0
+        function addBuyStrategy() {
+            const container = document.getElementById('buy-strategy-container');
+            container.innerHTML = ''; // Ensure only one exists
+            const block = createConfigBlock('buy-strategy', buyStrategyTypes, 0, 'buy-strategy', true);
+            container.appendChild(block);
+            updateArgsFields(buyStrategyTypes, 'buy-strategy', 0);
+        }
+
+        function addSellStrategy() {
+            const container = document.getElementById('sell-strategy-container');
+            container.innerHTML = '';
+            const block = createConfigBlock('sell-strategy', sellStrategyTypes, 0, 'sell-strategy', true);
+            container.appendChild(block);
+            updateArgsFields(sellStrategyTypes, 'sell-strategy', 0);
+        }
+
+        function addExitStrategy() {
+            const container = document.getElementById('exit-strategy-container');
+            container.innerHTML = '';
+            const block = createConfigBlock('exit-strategy', exitStrategyTypes, 0, 'exit-strategy', true);
+            container.appendChild(block);
+            updateArgsFields(exitStrategyTypes, 'exit-strategy', 0);
         }
 
 
+        const identifyEntryClasses = {{ identify_entry_classes | tojson }};
+        const identifyExitClasses = {{ identify_exit_classes | tojson }};
 
+        let identifyEntryCount = 0;
+        let identifyExitCount = 0;
 
+        // General function to add identify entry/exit blocks
+        function addConfigBlockWithIndicatorRef(typeKey, typeMap, countVar) {
+            const container = document.getElementById(`${typeKey}-container`);
+            const block = createConfigBlock(typeKey, typeMap, window[countVar], typeKey, true);
 
+            // Create Indicator Ref Index dropdown
+            const indicatorSelect = document.createElement('select');
+            indicatorSelect.name = `${typeKey}_indicator_ref_${window[countVar]}`;
 
+            const indicatorBlocks = document.querySelectorAll('.indicator-block');
+            indicatorBlocks.forEach((block, idx) => {
+                const select = block.querySelector('select');
+                const type = select ? select.value : `Indicator ${idx}`;
+                const option = document.createElement('option');
+                option.value = idx;
+                option.text = `${type} (index ${idx})`;
+                indicatorSelect.appendChild(option);
+            });
 
+            const label = document.createElement('label');
+            label.textContent = 'Indicator Ref Index: ';
+            block.appendChild(document.createElement('br'));
+            block.appendChild(label);
+            block.appendChild(indicatorSelect);
 
+            container.appendChild(block);
 
+            window[countVar]++;
+            document.getElementById(`num-${typeKey}s`).value = window[countVar];
+        }
 
+        // Entry-specific wrapper
+        function addIdentifyEntry() {
+            addConfigBlockWithIndicatorRef('identify_entry', identifyEntryClasses, 'identifyEntryCount');
+        }
 
-
-
-    // const indicatorClasses = {{ indicator_classes | tojson }};
-    // let indicatorCount = {{ config.indicators | length }};
-
-    // function createIndicatorBlock(index, selectedType = null, args = []) {
-    //     const container = document.createElement('div');
-    //     container.className = 'indicator-block';
-    //     container.dataset.index = index;
-
-    //     // Dropdown
-    //     const select = document.createElement('select');
-    //     select.name = `indicator_type_${index}`;
-    //     select.className = 'indicator-select';
-    //     select.dataset.index = index;
-    //     select.onchange = function() { updateArgsFields(index); };
-
-    //     for (let type in indicatorClasses) {
-    //         const option = document.createElement('option');
-    //         option.value = type;
-    //         option.text = type;
-    //         if (selectedType === type) option.selected = true;
-    //         select.appendChild(option);
-    //     }
-
-    //     container.appendChild(document.createTextNode("Type:"));
-    //     container.appendChild(select);
-
-    //     // Args inputs
-    //     const argsDiv = document.createElement('div');
-    //     argsDiv.id = `args_${index}`;
-    //     argsDiv.className = 'indicator-args';
-
-    //     const typeToUse = selectedType || select.value;
-    //     const paramNames = indicatorClasses[typeToUse] || [];
-
-    //     paramNames.forEach((param, i) => {
-    //         const input = document.createElement('input');
-    //         input.type = 'text';
-    //         input.name = `indicator_args_${index}`;
-    //         input.placeholder = param;
-    //         input.value = args[i] || '';
-    //         argsDiv.appendChild(input);
-    //     });
-
-    //     container.appendChild(argsDiv);
-
-    //     return container;
-    // }
-
-    // function updateArgsFields(index) {
-    //     const select = document.querySelector(`select[name='indicator_type_${index}']`);
-    //     const selectedType = select.value;
-    //     const argsDiv = document.getElementById(`args_${index}`);
-    //     argsDiv.innerHTML = '';
-
-    //     const paramNames = indicatorClasses[selectedType];
-    //     paramNames.forEach(param => {
-    //         const input = document.createElement('input');
-    //         input.type = 'text';
-    //         input.name = `indicator_args_${index}`;
-    //         input.placeholder = param;
-    //         argsDiv.appendChild(input);
-    //     });
-    // }
-
-    // function addIndicator() {
-    //     const container = document.getElementById('indicators-container');
-    //     const newBlock = createIndicatorBlock(indicatorCount);
-    //     container.appendChild(newBlock);
-    //     indicatorCount += 1;
-    //     document.getElementById('num_indicators').value = indicatorCount;
-    // }
-
-    let entryRuleCount = {{ config.identify_entry | length }};
-    let exitRuleCount = {{ config.identify_exit | length }};
-    const entryTypes = {{ identify_entry_classes | tojson }};
-    const exitTypes = {{ identify_exit_classes | tojson }};
-
-    function addEntryRule() {
-        const container = document.getElementById('entry-rules-container');
-        const div = document.createElement('div');
-        div.className = 'entry-rule-block';
-        div.dataset.index = entryRuleCount;
-
-        const select = document.createElement('select');
-        select.name = `entry_type_${entryRuleCount}`;
-        entryTypes.forEach(type => {
-            const option = document.createElement('option');
-            option.value = type;
-            option.text = type;
-            select.appendChild(option);
-        });
-
-        const input = document.createElement('input');
-        input.type = 'number';
-        input.name = `entry_indicator_index_${entryRuleCount}`;
-        input.placeholder = 'Indicator Index';
-
-        div.appendChild(select);
-        div.appendChild(document.createTextNode(' Indicator Index: '));
-        div.appendChild(input);
-        container.appendChild(div);
-
-        entryRuleCount += 1;
-        document.getElementById('num_entry_rules').value = entryRuleCount;
-    }
-
-    function addExitRule() {
-        const container = document.getElementById('exit-rules-container');
-        const div = document.createElement('div');
-        div.className = 'exit-rule-block';
-        div.dataset.index = exitRuleCount;
-
-        const select = document.createElement('select');
-        select.name = `exit_type_${exitRuleCount}`;
-        exitTypes.forEach(type => {
-            const option = document.createElement('option');
-            option.value = type;
-            option.text = type;
-            select.appendChild(option);
-        });
-
-        const input = document.createElement('input');
-        input.type = 'number';
-        input.name = `exit_indicator_index_${exitRuleCount}`;
-        input.placeholder = 'Indicator Index';
-
-        div.appendChild(select);
-        div.appendChild(document.createTextNode(' Indicator Index: '));
-        div.appendChild(input);
-        container.appendChild(div);
-
-        exitRuleCount += 1;
-        document.getElementById('num_exit_rules').value = exitRuleCount;
-    }
-
-    let entryTradeConditionCount = {{ config.entry_trade_conditions | length }};
-    const entryConditionTypes = {{ entry_condition_classes | tojson }};
-
-    function addEntryTradeCondition() {
-        const container = document.getElementById('entry-trade-conditions-container');
-        const block = createConfigBlock('entry-trade-condition', entryConditionTypes, entryTradeConditionCount, 'entry_trade_condition');
-        container.appendChild(block);
-        updateArgsFields(entryConditionTypes, 'entry_trade_condition', entryTradeConditionCount);
-        document.getElementById('num_entry_trade_conditions').value = ++entryTradeConditionCount;
-    }
-
-
-    let exitTradeConditionCount = {{ config.exit_trade_conditions | length }};
-    const exitConditionTypes = {{ exit_condition_classes | tojson }};
-
-    function addExitTradeCondition() {
-        const container = document.getElementById('exit-trade-conditions-container');
-        const block = createConfigBlock('exit-trade-condition', exitConditionTypes, exitTradeConditionCount, 'exit_trade_condition');
-        container.appendChild(block);
-        updateArgsFields(entryConditionTypes, 'exit-trade-condition', entryTradeConditionCount);
-        document.getElementById('num_exit_trade_conditions').value = ++exitTradeConditionCount;
-    }
-
-
-
-    // let entryTradeConditionCount = {{ config.entry_trade_conditions | length }};
-    // let exitTradeConditionCount = {{ config.exit_trade_conditions | length }};
-    // const entryConditionTypes = {{ entry_condition_classes | tojson }};
-    // const exitConditionTypes = {{ exit_condition_classes | tojson }};
-
-    // function addEntryTradeCondition() {
-    //     const container = document.getElementById('entry-trade-conditions-container');
-    //     const div = document.createElement('div');
-    //     div.className = 'entry-trade-condition-block';
-    //     div.dataset.index = entryTradeConditionCount;
-
-    //     const select = document.createElement('select');
-    //     select.name = `entry_trade_condition_type_${entryTradeConditionCount}`;
-    //     entryConditionTypes.forEach(type => {
-    //         const option = document.createElement('option');
-    //         option.value = type;
-    //         option.text = type;
-    //         select.appendChild(option);
-    //     });
-
-    //     div.appendChild(select);
-    //     container.appendChild(div);
-
-    //     entryTradeConditionCount += 1;
-    //     document.getElementById('num_entry_conditions').value = entryTradeConditionCount;
-    // }
-
-    // function addExitTradeCondition() {
-    //     const container = document.getElementById('exit-trade-conditions-container');
-    //     const div = document.createElement('div');
-    //     div.className = 'exit-trade-condition-block';
-    //     div.dataset.index = exitTradeConditionCount;
-
-    //     const select = document.createElement('select');
-    //     select.name = `exit_trade_condition_type_${exitTradeConditionCount}`;
-    //     exitConditionTypes.forEach(type => {
-    //         const option = document.createElement('option');
-    //         option.value = type;
-    //         option.text = type;
-    //         select.appendChild(option);
-    //     });
-
-    //     div.appendChild(select);
-    //     container.appendChild(div);
-
-    //     exitTradeConditionCount += 1;
-    //     document.getElementById('num_exit_conditions').value = exitTradeConditionCount;
-    // }
-
+        // Exit-specific wrapper
+        function addIdentifyExit() {
+            addConfigBlockWithIndicatorRef('identify_exit', identifyExitClasses, 'identifyExitCount');
+        }
 
     </script>
 </body>

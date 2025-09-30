@@ -1,14 +1,16 @@
-IDENTIFY_ENTRY_CLASSES = [
-    "SupertrendEntry",
-    "MACDEntry",
-    "RSIEntry"
-]
 
-IDENTIFY_EXIT_CLASSES = [
-    "SupertrendExit",
-    "MACDExit",
-    "RSIExit"
-]
+# The empty [] is REQUIRED
+IDENTIFY_ENTRY_CLASSES = {
+    "SupertrendEntry": [],
+    "MACDEntry": [],
+    "RSIEntry": []
+}
+
+IDENTIFY_EXIT_CLASSES = {
+    "SupertrendExit": [],
+    "MACDExit": [],
+    "RSIExit": []
+}
 
 ENTRY_TRADE_CONDITIONS_CLASSES = {
     "NoEntryCondition": [],

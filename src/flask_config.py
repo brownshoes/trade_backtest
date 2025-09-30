@@ -3,7 +3,7 @@ import json
 
 from init.flask_init import DEFAULT_CONFIG
 from indicators.indicator_classes import INDICATOR_CLASSES
-from customization.customization_classes import IDENTIFY_ENTRY_CLASSES, IDENTIFY_EXIT_CLASSES,ENTRY_TRADE_CONDITIONS_CLASSES,EXIT_TRADE_CONDITIONS_CLASSES,EXIT_STRATEGIES_CLASSES
+from customization.customization_classes import IDENTIFY_ENTRY_CLASSES, IDENTIFY_EXIT_CLASSES, ENTRY_TRADE_CONDITIONS_CLASSES,EXIT_TRADE_CONDITIONS_CLASSES,BUY_STRATEGIES_CLASSES, SELL_STRATEGIES_CLASSES, EXIT_STRATEGIES_CLASSES
 
 from log.logger import setup_logger
 log = setup_logger("Flask", mode="off")
@@ -83,6 +83,31 @@ def config():
                 exit_trade_conditions.append({"type": cond_type})
         config_data['exit_trade_conditions'] = exit_trade_conditions
 
+        # Buy Strategy
+        buy_strategy_type = request.form.get('buy_strategy_type_0')
+        buy_strategy_args = {
+            k.replace(f'buy_strategy_arg_0_', ''): request.form[k]
+            for k in request.form if k.startswith('buy_strategy_arg_0_')
+        }
+        config_data['buy_strategy'] = {'type': buy_strategy_type, **buy_strategy_args}
+
+        # Sell Strategy
+        sell_strategy_type = request.form.get('sell_strategy_type_0')
+        sell_strategy_args = {
+            k.replace(f'sell_strategy_arg_0_', ''): request.form[k]
+            for k in request.form if k.startswith('sell_strategy_arg_0_')
+        }
+        config_data['sell_strategy'] = {'type': sell_strategy_type, **sell_strategy_args}
+
+        # Exit Strategy
+        exit_strategy_type = request.form.get('exit_strategy_type_0')
+        exit_strategy_args = {
+            k.replace(f'exit_strategy_arg_0_', ''): request.form[k]
+            for k in request.form if k.startswith('exit_strategy_arg_0_')
+        }
+        config_data['exit_strategy'] = {'type': exit_strategy_type, **exit_strategy_args}
+
+
         
 
 
@@ -99,7 +124,10 @@ def config():
         identify_entry_classes=IDENTIFY_ENTRY_CLASSES,
         identify_exit_classes=IDENTIFY_EXIT_CLASSES,
         entry_condition_classes=ENTRY_TRADE_CONDITIONS_CLASSES,
-        exit_condition_classes=EXIT_TRADE_CONDITIONS_CLASSES
+        exit_condition_classes=EXIT_TRADE_CONDITIONS_CLASSES,
+        buy_strategy_classes=BUY_STRATEGIES_CLASSES,
+        sell_strategy_classes=SELL_STRATEGIES_CLASSES,
+        exit_strategy_classes=EXIT_STRATEGIES_CLASSES
     )
 
 
