@@ -336,6 +336,17 @@
             }
         }
 
+        populateEntryTradeConditions(config.entry_trade_conditions || []);
+
+        populateExitTradeConditions(config.exit_trade_conditions || []);
+
+        populateBuyStrategy(config.buy_strategy || {});
+
+        populateSellStrategy(config.sell_strategy || {});
+
+        populateExitStrategy(config.exit_strategy || {});
+
+
         // === Indicators ===
         document.getElementById('indicators-container').innerHTML = '';
         indicatorCount = 0;
@@ -457,6 +468,69 @@
         });
 
         document.getElementById('num-identify-exits').value = identifyExitCount;
+    }
+
+    function populateEntryTradeConditions(conditions) {
+        conditions.forEach((condition, index) => {
+            addEntryTradeCondition();
+            const typeEl = document.querySelector(`[name="entry-trade-condition-${index}-type"]`);
+            if (typeEl) {
+                typeEl.value = condition.type;
+                updateArgsFields(entryConditionTypes, 'entry-trade-condition', index);
+                setArgsFields(condition.args, 'entry-trade-condition', index);
+            }
+        });
+    }
+
+    function populateExitTradeConditions(conditions) {
+        conditions.forEach((condition, index) => {
+            addExitTradeCondition(); 
+            const typeEl = document.querySelector(`[name="exit-trade-condition-${index}-type"]`);
+            if (typeEl) {
+                typeEl.value = condition.type;
+                updateArgsFields(exitConditionTypes, 'exit-trade-condition', index); // similar to entryConditionTypes
+                setArgsFields(condition.args, 'exit-trade-condition', index);
+            }
+        });
+    }
+
+    function populateBuyStrategy(strategy) {
+        addBuyStrategy(); 
+        const typeEl = document.querySelector(`[name="buy-strategy-type"]`);
+        if (typeEl) {
+            typeEl.value = strategy.type;
+            updateArgsFields(buyStrategyTypes, 'buy-strategy', 0);  // single-object, index 0
+            setArgsFields(strategy.args || {}, 'buy-strategy', 0);
+        }
+    }
+
+
+    function populateSellStrategy(strategy) {
+        addSellStrategy()
+        const typeEl = document.querySelector(`[name="sell-strategy-type"]`);
+        if (typeEl) {
+            typeEl.value = strategy.type;
+            updateArgsFields(sellStrategyTypes, 'sell-strategy', 0);
+            setArgsFields(strategy.args, 'sell-strategy', 0);
+        }
+    }
+
+    function populateExitStrategy(strategy) {
+        addExitStrategy()
+        const typeEl = document.querySelector(`[name="exit-strategy-type"]`);
+        if (typeEl) {
+            typeEl.value = strategy.type;
+            updateArgsFields(exitStrategyTypes, 'exit-strategy', 0);
+            setArgsFields(strategy.args, 'exit-strategy', 0);
+        }
+    }
+
+    function setArgsFields(args, blockPrefix, index) {
+        if (!Array.isArray(args)) return;
+        args.forEach((arg, argIndex) => {
+            const argEl = document.querySelector(`[name="${blockPrefix}-${index}-arg${argIndex}"]`);
+            if (argEl) argEl.value = arg;
+        });
     }
     </script>
 
