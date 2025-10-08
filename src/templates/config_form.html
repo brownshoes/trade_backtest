@@ -6,6 +6,10 @@
 <body>
     <h1>Config Editor</h1>
     <form method="POST">
+        <h2>Load JSON Config</h2>
+        <input type="file" id="json-upload" accept=".json">
+        <button type="button" onclick="loadJSONConfig()">Load Config</button>
+
         <label>Name:</label>
         <input type="text" name="name" value="{{ config['name'] }}"><br>
 
@@ -68,21 +72,9 @@
         <input type="hidden" id="num-identify-entries" name="num_identify_entries" value="0">
 
         <h2>Identify Exits</h2>
-        <div id="identify_exit-container"></div>
+        <div id="identify-exit-container"></div>
         <button type="button" onclick="addIdentifyExit()">+ Add Identify Exit</button>
         <input type="hidden" id="num-identify_exits" name="num_identify_exits" value="0">
-
-
-
-        <!-- <h2>Identify Entry</h2>
-        <div id="identify-entry-container">
-            {% for rule in config.identify_entry %}
-                
-         {% endfor %}
-        </div>
-        <button type="button" onclick="addIdentifyEntry()">+ Add Entry</button>
-        <input type="hidden" id="num-identify-entry" name="num_identify_entry" value="{{ config.identify_entry | length }}">
- --> 
 
         <h2>Entry Trade Conditions</h2>
         <div id="entry-trade-conditions-container">
@@ -200,9 +192,6 @@
         let indicatorCount = {{ config.indicators | length }};
         const indicatorClasses = {{ indicator_classes | tojson }};
 
-        // let identifyEntryCount = {{ config.identify_entry | length }};
-        // const identifyEntryTypes = {{ identify_entry_classes | tojson }};
-
         let entryTradeConditionCount = {{ config.entry_trade_conditions | length }};
         const entryConditionTypes = {{ entry_condition_classes | tojson }};
 
@@ -221,14 +210,6 @@
             indicatorCount++;
             document.getElementById('num-indicators').value = indicatorCount;
         }
-
-        // function addIdentifyEntry() {
-        //     const container = document.getElementById('identify-entry-container');
-        //     const block = createConfigBlock('identify-entry', identifyEntryTypes, identifyEntryCount, 'identify-entry', true);
-        //     container.appendChild(block);
-        //     updateArgsFields(identifyEntryTypes, 'identify-entry', identifyEntryCount);
-        //     document.getElementById('num-identify-entry').value = ++identifyEntryCount;
-        // }
 
         function addEntryTradeCondition() {
             const container = document.getElementById('entry-trade-conditions-container');
@@ -311,15 +292,175 @@
 
         // Entry-specific wrapper
         function addIdentifyEntry() {
-            addConfigBlockWithIndicatorRef('identify_entry', identifyEntryClasses, 'identifyEntryCount');
+            addConfigBlockWithIndicatorRef('identify-entry', identifyEntryClasses, 'identifyEntryCount');
         }
 
         // Exit-specific wrapper
         function addIdentifyExit() {
-            addConfigBlockWithIndicatorRef('identify_exit', identifyExitClasses, 'identifyExitCount');
+            addConfigBlockWithIndicatorRef('identify-exit', identifyExitClasses, 'identifyExitCount');
         }
 
     </script>
+<!-- 
+    <script>
+        function loadJSONConfig() {
+            const fileInput = document.getElementById('json-upload');
+            const file = fileInput.files[0];
+            if (!file) {
+                alert("Please select a JSON file.");
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                try {
+                    const config = JSON.parse(e.target.result);
+                    // Populate form only AFTER reading JSON file:
+                    populateFormFromJSON(config);
+                } catch (err) {
+                    alert("Invalid JSON file.");
+                    console.error(err);
+                }
+            };
+            reader.readAsText(file);
+        }
+
+    </script>
+    <script>
+    function populateFormFromJSON(config) {
+        // === General Fields ===
+        for (const key in config) {
+            const el = document.querySelector(`[name="${key}"]`);
+            if (el) {
+                el.value = config[key];
+            }
+        }
+
+        // === Indicators ===
+        document.getElementById('indicators-container').innerHTML = '';
+        indicatorCount = 0;
+        config.indicators.forEach(ind => {
+            const block = createConfigBlock('indicator', indicatorClasses, indicatorCount, 'indicator', true, true);
+            const select = block.querySelector(`select[name="indicator_type_${indicatorCount}"]`);
+            if (select) select.value = ind.type;
+
+            const argsDiv = block.querySelector(`#indicator_args_${indicatorCount}`);
+            const params = indicatorClasses[ind.type] || [];
+            params.forEach((param, i) => {
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.name = `indicator_arg_${indicatorCount}_${param}`;
+                input.placeholder = param;
+                input.value = ind.args[i] || '';
+                argsDiv.appendChild(input);
+            });
+
+            document.getElementById('indicators-container').appendChild(block);
+            indicatorCount++;
+
+            console.log('Block:', block);
+
+        });
+        document.getElementById('num-indicators').value = indicatorCount;
+
+
+
+        // === Identify Entries ===
+        document.getElementById('identify-entry-container').innerHTML = '';
+        identifyEntryCount = 0;
+        config.identify_entry?.forEach(entry => {
+            const index = identifyEntryCount;
+
+            const block = createConfigBlock('identify_entry', identifyEntryClasses, index, 'identify_entry', true);
+
+            // Set type dropdown value
+            const select = block.querySelector(`select[name="identify_entry_type_${index}"]`);
+            if (select) {
+                select.value = entry.type;
+                // Trigger change event to populate args fields (if any)
+                select.dispatchEvent(new Event('change'));
+            }
+
+            // Create and append the indicator_ref_index dropdown
+            const label = document.createElement('label');
+            label.textContent = 'Indicator Ref Index: ';
+
+            const refSelect = document.createElement('select');
+            refSelect.name = `identify_entry_indicator_ref_${index}`;
+
+            config.indicators.forEach((ind, idx) => {
+                const option = document.createElement('option');
+                option.value = idx;
+                option.textContent = `${ind.type} (index ${idx})`;
+                if (idx === entry.indicator_ref_index) {
+                    option.selected = true;
+                }
+                refSelect.appendChild(option);
+            });
+
+            // Append the dropdown to the block
+            block.appendChild(document.createElement('br'));
+            block.appendChild(label);
+            block.appendChild(refSelect);
+
+            // Add the full block to the container
+            document.getElementById('identify-entry-container').appendChild(block);
+
+            identifyEntryCount++;
+        });
+        document.getElementById('num-identify-entries').value = identifyEntryCount;
+
+
+
+        // === Identify Exits ===
+        document.getElementById('identify-exit-container').innerHTML = '';
+        identifyExitCount = 0;
+        config.identify_exit?.forEach(exit => {
+            const index = identifyExitCount;
+
+            const block = createConfigBlock('identify_exit', identifyExitClasses, index, 'identify_exit', true);
+
+            // Set type dropdown value
+            const select = block.querySelector(`select[name="identify_exit_type_${index}"]`);
+            if (select) {
+                select.value = exit.type;
+                // Trigger change event to populate args fields (if any)
+                select.dispatchEvent(new Event('change'));
+            }
+
+            // Create and append the indicator_ref_index dropdown
+            const label = document.createElement('label');
+            label.textContent = 'Indicator Ref Index: ';
+
+            const refSelect = document.createElement('select');
+            refSelect.name = `identify_exit_indicator_ref_${index}`;
+
+            config.indicators.forEach((ind, idx) => {
+                const option = document.createElement('option');
+                option.value = idx;
+                option.textContent = `${ind.type} (index ${idx})`;
+                if (idx === exit.indicator_ref_index) {
+                    option.selected = true;
+                }
+                refSelect.appendChild(option);
+            });
+
+            // Append the dropdown to the block
+            block.appendChild(document.createElement('br'));
+            block.appendChild(label);
+            block.appendChild(refSelect);
+
+            // Add the full block to the container
+            document.getElementById('identify-exit-container').appendChild(block);
+
+            identifyExitCount++;
+        });
+        document.getElementById('num-identify-exits').value = identifyExitCount;
+
+    }
+    </script> -->
+
+
 </body>
 </html>
 
