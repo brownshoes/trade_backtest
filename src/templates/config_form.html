@@ -74,7 +74,7 @@
         <h2>Identify Exits</h2>
         <div id="identify-exit-container"></div>
         <button type="button" onclick="addIdentifyExit()">+ Add Identify Exit</button>
-        <input type="hidden" id="num-identify_exits" name="num_identify_exits" value="0">
+        <input type="hidden" id="num-identify-exits" name="num_identify_exits" value="0">
 
         <h2>Entry Trade Conditions</h2>
         <div id="entry-trade-conditions-container">
@@ -301,7 +301,7 @@
         }
 
     </script>
-<!-- 
+
     <script>
         function loadJSONConfig() {
             const fileInput = document.getElementById('json-upload');
@@ -371,17 +371,10 @@
         config.identify_entry?.forEach(entry => {
             const index = identifyEntryCount;
 
-            const block = createConfigBlock('identify_entry', identifyEntryClasses, index, 'identify_entry', true);
+            // ✅ 1. Create the block first
+            const block = createConfigBlock('identify-entry', identifyEntryClasses, index, 'identify_entry', true);
 
-            // Set type dropdown value
-            const select = block.querySelector(`select[name="identify_entry_type_${index}"]`);
-            if (select) {
-                select.value = entry.type;
-                // Trigger change event to populate args fields (if any)
-                select.dispatchEvent(new Event('change'));
-            }
-
-            // Create and append the indicator_ref_index dropdown
+            // ✅ 2. Add indicator_ref_index dropdown
             const label = document.createElement('label');
             label.textContent = 'Indicator Ref Index: ';
 
@@ -398,16 +391,23 @@
                 refSelect.appendChild(option);
             });
 
-            // Append the dropdown to the block
             block.appendChild(document.createElement('br'));
             block.appendChild(label);
             block.appendChild(refSelect);
 
-            // Add the full block to the container
+            // ✅ 3. Append the block to DOM BEFORE dispatching change
             document.getElementById('identify-entry-container').appendChild(block);
+
+            // ✅ 4. Set dropdown and trigger change
+            const select = block.querySelector(`select[name="identify_entry_type_${index}"]`);
+            if (select) {
+                select.value = entry.type;
+                select.dispatchEvent(new Event('change'));
+            }
 
             identifyEntryCount++;
         });
+
         document.getElementById('num-identify-entries').value = identifyEntryCount;
 
 
@@ -415,20 +415,14 @@
         // === Identify Exits ===
         document.getElementById('identify-exit-container').innerHTML = '';
         identifyExitCount = 0;
+
         config.identify_exit?.forEach(exit => {
             const index = identifyExitCount;
 
-            const block = createConfigBlock('identify_exit', identifyExitClasses, index, 'identify_exit', true);
+            // ✅ 1. Create the block
+            const block = createConfigBlock('identify-exit', identifyExitClasses, index, 'identify_exit', true);
 
-            // Set type dropdown value
-            const select = block.querySelector(`select[name="identify_exit_type_${index}"]`);
-            if (select) {
-                select.value = exit.type;
-                // Trigger change event to populate args fields (if any)
-                select.dispatchEvent(new Event('change'));
-            }
-
-            // Create and append the indicator_ref_index dropdown
+            // ✅ 2. Create and append the indicator_ref_index dropdown
             const label = document.createElement('label');
             label.textContent = 'Indicator Ref Index: ';
 
@@ -445,20 +439,26 @@
                 refSelect.appendChild(option);
             });
 
-            // Append the dropdown to the block
             block.appendChild(document.createElement('br'));
             block.appendChild(label);
             block.appendChild(refSelect);
 
-            // Add the full block to the container
+            // ✅ 3. Append the block to the DOM BEFORE dispatching change event
             document.getElementById('identify-exit-container').appendChild(block);
+
+            // ✅ 4. Set the select value and dispatch 'change' to populate args
+            const select = block.querySelector(`select[name="identify_exit_type_${index}"]`);
+            if (select) {
+                select.value = exit.type;
+                select.dispatchEvent(new Event('change'));
+            }
 
             identifyExitCount++;
         });
-        document.getElementById('num-identify-exits').value = identifyExitCount;
 
+        document.getElementById('num-identify-exits').value = identifyExitCount;
     }
-    </script> -->
+    </script>
 
 
 </body>
