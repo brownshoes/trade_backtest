@@ -40,15 +40,15 @@
         <label>Main Time Series:</label>
         <input type="text" name="main_time_series" value="{{ config['main_time_series'] }}"><br>
 
-        <label>Time Series:</label>
-        {% for ts in config['time_series'] %}
-            <input type="text" name="time_series" value="{{ ts }}"><br>
-        {% endfor %}
+        <label>Time Series:</label><br>
+        <div id="time-series-container"></div>
+        <button type="button" onclick="addArrayField('time-series', 'time-series-container')">+ Add Time Series</button>
+        <br>
 
-        <label>Exit Time Series:</label>
-        {% for ts in config['exit_time_series'] %}
-            <input type="text" name="exit_time_series" value="{{ ts }}"><br>
-        {% endfor %}
+        <label>Exit Time Series:</label><br>
+        <div id="exit-time-series-container"></div>
+        <button type="button" onclick="addArrayField('exit-time-series', 'exit-time-series-container')">+ Add Exit Time Series</button>
+        <br>
 
         <label>CSV Input File:</label>
         <input type="text" name="csv_input_file" value="{{ config['csv_input_file'] }}"><br>
@@ -119,10 +119,6 @@
         <button type="submit">Save Config</button>
     </form>
 
-    <hr>
-    <h2>Raw Config (JSON)</h2>
-    <pre>{{ config | tojson(indent=4) }}</pre>
-
     <script>
         function createConfigBlock(configType, typeMap, index, prefix, showRemove = false) {
             const container = document.createElement('div');
@@ -188,6 +184,40 @@
                 argsDiv.appendChild(input);
             });
         }
+
+        /**
+         * Generic helper to add a text input for an array field (like time_series, exit_time_series, etc.)
+         * @param {string} prefix - base name for the input (e.g., "time-series" or "exit-time-series")
+         * @param {string} containerId - ID of the HTML container where inputs are added
+         * @param {string} [value=""] - optional initial value
+         */
+        function addArrayField(prefix, containerId, value = "") {
+            const container = document.getElementById(containerId);
+            const index = container.querySelectorAll(`input[name^="${prefix}-"]`).length;
+
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.name = `${prefix}-${index}`;
+            input.value = value;
+            input.classList.add('array-input');
+
+            container.appendChild(input);
+            container.appendChild(document.createElement('br'));
+        }
+
+        /**
+         * Populates a container with array fields from JSON data
+         * @param {string} prefix - same base name (e.g., "time-series")
+         * @param {string} containerId - container element ID
+         * @param {Array} values - array of strings to populate
+         */
+        function populateArrayFields(prefix, containerId, values = []) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = ''; // clear existing fields
+
+            values.forEach(value => addArrayField(prefix, containerId, value));
+        }
+
 
         let indicatorCount = {{ config.indicators | length }};
         const indicatorClasses = {{ indicator_classes | tojson }};
@@ -336,6 +366,12 @@
             }
         }
 
+        if (Array.isArray(config.time_series))
+            populateTimeSeries(config.time_series);
+
+        if (Array.isArray(config.exit_time_series))
+            populateExitTimeSeries(config.exit_time_series);
+
         populateEntryTradeConditions(config.entry_trade_conditions || []);
 
         populateExitTradeConditions(config.exit_trade_conditions || []);
@@ -468,6 +504,14 @@
         });
 
         document.getElementById('num-identify-exits').value = identifyExitCount;
+    }
+
+    function populateTimeSeries(values) {
+        populateArrayFields('time-series', 'time-series-container', values);
+    }
+
+    function populateExitTimeSeries(values) {
+        populateArrayFields('exit-time-series', 'exit-time-series-container', values);
     }
 
     function populateEntryTradeConditions(conditions) {

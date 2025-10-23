@@ -10,12 +10,13 @@ log = setup_logger("Flask", mode="off")
 
 app = Flask(__name__)
 
-config_data = DEFAULT_CONFIG.to_json()
+#config_data = DEFAULT_CONFIG.to_json()
 
 
 @app.route('/', methods=['GET', 'POST'])
 def config():
-    global config_data
+    #global config_data
+    config_data = {}
 
     if request.method == 'POST':
         # Update the config_data with the submitted form data
@@ -32,10 +33,12 @@ def config():
         config_data['csv_input_file'] = request.form['csv_input_file']
 
         # Time series lists
-        config_data['time_series'] = request.form.getlist('time_series')
-        config_data['exit_time_series'] = request.form.getlist('exit_time_series')
-
-        # (Advanced sections like indicators, strategies, etc. skipped for brevity in this minimal example)
+        config_data['time_series'] = [
+            value for key, value in request.form.items() if key.startswith('time-series-')
+        ]
+        config_data['exit_time_series'] = [
+            value for key, value in request.form.items() if key.startswith('exit-time-series-')
+        ]
 
         # Handle indicators
         indicators = []
@@ -113,13 +116,12 @@ def config():
 
         # Optional: Save to file
         with open('config.json', 'w') as f:
-            json.dump(config_data, f, indent=4)
+            json.dump(config_data, f, indent=2)
 
         return redirect(url_for('config'))
 
     return render_template(
         'config_form.html',
-        config=config_data,
         indicator_classes=INDICATOR_CLASSES,
         identify_entry_classes=IDENTIFY_ENTRY_CLASSES,
         identify_exit_classes=IDENTIFY_EXIT_CLASSES,
