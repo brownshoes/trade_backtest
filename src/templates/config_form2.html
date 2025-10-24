@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Trading Config Editor</title>
+<style>
+body { font-family: Arial, sans-serif; margin: 40px; }
+input, select { padding: 5px; margin: 5px; }
+fieldset { margin-bottom: 20px; padding: 10px; }
+.block { border: 1px solid #ccc; padding: 10px; margin-top: 10px; border-radius: 5px; }
+button { margin-top: 5px; }
+</style>
+</head>
+<body>
+<h1>Trading Config Editor</h1>
+
+<!-- JSON Load -->
+<label>Upload JSON File:</label>
+<input type="file" id="jsonFileInput" accept=".json"><br><br>
+
+<!-- Indicators Section -->
+<fieldset>
+<legend>Indicators</legend>
+<label for="indicatorSelect">Select Indicator:</label>
+<select id="indicatorSelect">
+  <option value="">-- Select --</option>
+  {% for key in indicators %}
+    <option value="{{ key }}">{{ key }}</option>
+  {% endfor %}
+</select>
+<button type="button" id="addIndicatorBtn">Add Indicator</button>
+<div id="indicatorsContainer"></div>
+</fieldset>
+
+<!-- Submit Button -->
+<button type="button" id="submitBtn">Submit to Flask</button>
+
+<script>
+// ==== Globals from Flask ====
+const INDICATOR_CLASSES = {{ indicators | tojson }};
+
+// ==== DOM Elements ====
+const jsonInput = document.getElementById('jsonFileInput');
+const indicatorsContainer = document.getElementById('indicatorsContainer');
+const indicatorSelect = document.getElementById('indicatorSelect');
+
+// ==== State ====
+let indicatorsList = [];
+let nextRef = 1;
+
+// ==== Add Indicator ====
+document.getElementById('addIndicatorBtn').addEventListener('click', () => {
+  const type = indicatorSelect.value;
+  if (!type) return alert("Select an indicator first.");
+  addIndicator(type);
+});
+
+function addIndicator(type, args = [], ref = null) {
+  const argNames = INDICATOR_CLASSES[type] || [];
+  ref = ref || nextRef++;
+  const div = document.createElement('div');
+  div.className = 'block';
+  div.dataset.ref = ref;
+
+  const title = document.createElement('h3');
+  title.textContent = `${type} (Ref: ${ref})`;
+  div.appendChild(title);
+
+  const inputs = [];
+  argNames.forEach((argName, i) => {
+    const label = document.createElement('label');
+    label.textContent = argName + ": ";
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.value = args[i] || '';
+    div.appendChild(label);
+    div.appendChild(input);
+    div.appendChild(document.createElement('br'));
+    inputs.push(input);
+  });
+
+  const removeBtn = document.createElement('button');
+  removeBtn.textContent = 'Remove';
+  removeBtn.type = 'button';
+  removeBtn.onclick = () => {
+    div.remove();
+    indicatorsList = indicatorsList.filter(ind => ind.ref !== ref);
+  };
+  div.appendChild(removeBtn);
+
+  indicatorsContainer.appendChild(div);
+  indicatorsList.push({ref, type, args: inputs});
+}
+
+// ==== JSON Upload ====
+jsonInput.addEventListener('change', e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = event => {
+    try {
+      const data = JSON.parse(event.target.result);
+      loadFromJSON(data);
+    } catch {
+      alert("Invalid JSON file.");
+    }
+  };
+  reader.readAsText(file);
+});
+
+// ==== Load JSON ====
+function loadFromJSON(data) {
+    indicatorsContainer.innerHTML = '';
+    indicatorsList = [];
+    nextRef = 1;
+
+    if (data.indicators) {
+        data.indicators.forEach(ind => {
+            // Use the ref from JSON if present
+            const ref = ind.ref !== undefined ? ind.ref : nextRef++;
+            addIndicator(ind.type, ind.args || [], ref);
+            if (ref >= nextRef) nextRef = ref + 1;
+        });
+    }
+}
+
+
+// ==== Collect Data ====
+function collectData() {
+  return {
+    indicators: indicatorsList.map(ind => ({
+      ref: ind.ref,
+      type: ind.type,
+      args: ind.args.map(i => i.value)
+    }))
+  };
+}
+
+// ==== Submit ====
+document.getElementById('submitBtn').addEventListener('click', async () => {
+  const data = collectData();
+  console.log("Sending data:", data);
+  try {
+    const res = await fetch("/submit", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data)
+    });
+    const result = await res.json();
+    alert("✅ Sent to Flask!\n\n" + JSON.stringify(result, null, 2));
+  } catch (err) {
+    alert("❌ Failed to send data.");
+  }
+});
+</script>
+</body>
+</html>
