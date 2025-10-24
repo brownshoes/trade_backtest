@@ -5,7 +5,7 @@
 <title>Trading Config Editor</title>
 <style>
 body { font-family: Arial, sans-serif; margin: 40px; }
-input, select { padding: 5px; margin: 5px; }
+input, select, textarea { padding: 5px; margin: 5px; }
 fieldset { margin-bottom: 20px; padding: 10px; }
 .block { border: 1px solid #ccc; padding: 10px; margin-top: 10px; border-radius: 5px; }
 button { margin-top: 5px; }
@@ -32,6 +32,36 @@ button { margin-top: 5px; }
 <div id="indicatorsContainer"></div>
 </fieldset>
 
+<!-- Identify Entry Section -->
+<fieldset>
+<legend>Identify Entry</legend>
+<label for="entrySelect">Select Entry Type:</label>
+<select id="entrySelect">
+  <option value="">-- Select --</option>
+  {% for key in identify_entry_classes %}
+    <option value="{{ key }}">{{ key }}</option>
+  {% endfor %}
+</select>
+<button type="button" id="addEntryBtn">Add Entry</button>
+<div id="entryContainer"></div>
+</fieldset>
+
+<!-- Identify Exit Section -->
+<fieldset>
+<legend>Identify Exit</legend>
+<label for="exitSelect">Select Exit Type:</label>
+<select id="exitSelect">
+  <option value="">-- Select --</option>
+  {% for key in identify_exit_classes %}
+    <option value="{{ key }}">{{ key }}</option>
+  {% endfor %}
+</select>
+<button type="button" id="addExitBtn">Add Exit</button>
+<div id="exitContainer"></div>
+</fieldset>
+
+
+
 <!-- Submit Button -->
 <button type="button" id="submitBtn">Submit to Flask</button>
 
@@ -44,7 +74,7 @@ const jsonInput = document.getElementById('jsonFileInput');
 const indicatorsContainer = document.getElementById('indicatorsContainer');
 const indicatorSelect = document.getElementById('indicatorSelect');
 
-// ==== State ====
+// ==== Indicators State ====
 let indicatorsList = [];
 let nextRef = 1;
 
@@ -92,6 +122,76 @@ function addIndicator(type, args = [], ref = null) {
   indicatorsList.push({ref, type, args: inputs});
 }
 
+// ==== Add Entry ====
+document.getElementById('addEntryBtn').addEventListener('click', () => {
+    const type = document.getElementById('entrySelect').value;
+    if (!type) return alert("Select an entry type first.");
+    addEntry(type);
+});
+
+function addEntry(type, indicator_ref = "") {
+    const div = document.createElement('div');
+    div.className = 'block';
+
+    const title = document.createElement('h3');
+    title.textContent = type;
+    div.appendChild(title);
+
+    const label = document.createElement('label');
+    label.textContent = "Indicator Ref(s) (comma separated): ";
+    const textarea = document.createElement('textarea');
+    textarea.rows = 2;
+    textarea.cols = 30;
+    textarea.value = indicator_ref;
+    div.appendChild(label);
+    div.appendChild(document.createElement('br'));
+    div.appendChild(textarea);
+
+    const removeBtn = document.createElement('button');
+    removeBtn.textContent = 'Remove';
+    removeBtn.type = 'button';
+    removeBtn.onclick = () => div.remove();
+    div.appendChild(document.createElement('br'));
+    div.appendChild(removeBtn);
+
+    document.getElementById('entryContainer').appendChild(div);
+}
+
+// ==== Add Exit ====
+document.getElementById('addExitBtn').addEventListener('click', () => {
+    const type = document.getElementById('exitSelect').value;
+    if (!type) return alert("Select an exit type first.");
+    addExit(type);
+});
+
+function addExit(type, indicator_ref = "") {
+    const div = document.createElement('div');
+    div.className = 'block';
+
+    const title = document.createElement('h3');
+    title.textContent = type;
+    div.appendChild(title);
+
+    const label = document.createElement('label');
+    label.textContent = "Indicator Ref(s) (comma separated): ";
+    const textarea = document.createElement('textarea');
+    textarea.rows = 2;
+    textarea.cols = 30;
+    textarea.value = indicator_ref;
+    div.appendChild(label);
+    div.appendChild(document.createElement('br'));
+    div.appendChild(textarea);
+
+    const removeBtn = document.createElement('button');
+    removeBtn.textContent = 'Remove';
+    removeBtn.type = 'button';
+    removeBtn.onclick = () => div.remove();
+    div.appendChild(document.createElement('br'));
+    div.appendChild(removeBtn);
+
+    document.getElementById('exitContainer').appendChild(div);
+}
+
 // ==== JSON Upload ====
 jsonInput.addEventListener('change', e => {
   const file = e.target.files[0];
@@ -111,29 +211,53 @@ jsonInput.addEventListener('change', e => {
 // ==== Load JSON ====
 function loadFromJSON(data) {
     indicatorsContainer.innerHTML = '';
+    document.getElementById('entryContainer').innerHTML = '';
+    document.getElementById('exitContainer').innerHTML = '';
     indicatorsList = [];
     nextRef = 1;
 
     if (data.indicators) {
         data.indicators.forEach(ind => {
-            // Use the ref from JSON if present
             const ref = ind.ref !== undefined ? ind.ref : nextRef++;
             addIndicator(ind.type, ind.args || [], ref);
             if (ref >= nextRef) nextRef = ref + 1;
         });
     }
+
+    if (data.identify_entry) {
+        data.identify_entry.forEach(entry => addEntry(entry.type, (entry.indicator_ref || []).join(',')));
+    }
+
+    if (data.identify_exit) {
+        data.identify_exit.forEach(exit => addExit(exit.type, (exit.indicator_ref || []).join(',')));
+    }
 }
 
-
 // ==== Collect Data ====
+function getEntries() {
+    return Array.from(document.querySelectorAll('#entryContainer .block')).map(block => ({
+        type: block.querySelector('h3').textContent,
+        indicator_ref: block.querySelector('textarea').value.split(',').map(s => s.trim()).filter(s => s)
+    }));
+}
+
+function getExits() {
+    return Array.from(document.querySelectorAll('#exitContainer .block')).map(block => ({
+        type: block.querySelector('h3').textContent,
+        indicator_ref: block.querySelector('textarea').value.split(',').map(s => s.trim()).filter(s => s)
+    }));
+}
+
 function collectData() {
-  return {
-    indicators: indicatorsList.map(ind => ({
-      ref: ind.ref,
-      type: ind.type,
-      args: ind.args.map(i => i.value)
-    }))
-  };
+    return {
+        indicators: indicatorsList.map(ind => ({
+            ref: ind.ref,
+            type: ind.type,
+            args: ind.args.map(i => i.value)
+        })),
+        identify_entry: getEntries(),
+        identify_exit: getExits()
+    };
 }
 
 // ==== Submit ====

@@ -11,7 +11,9 @@ app = Flask(__name__)
 def index():
     return render_template("config_form2.html",indicators=INDICATOR_CLASSES,
         identify_entry_classes=IDENTIFY_ENTRY_CLASSES,
-        identify_exit_classes=IDENTIFY_EXIT_CLASSES)
+        identify_exit_classes=IDENTIFY_EXIT_CLASSES,
+        entry_trade_conditions_classes=ENTRY_TRADE_CONDITIONS_CLASSES,
+        exit_trade_conditions_classes=EXIT_TRADE_CONDITIONS_CLASSES)
 
 @app.route("/submit", methods=["POST"])
 def submit():
