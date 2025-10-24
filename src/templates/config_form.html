@@ -362,26 +362,53 @@
         for (const key in config) {
             const el = document.querySelector(`[name="${key}"]`);
             if (el) {
-                el.value = config[key];
+                if (el.type === 'checkbox') {
+                    el.checked = !!config[key]; 
+                } else {
+                    el.value = config[key];
+                }
             }
         }
 
         if (Array.isArray(config.time_series))
-            populateTimeSeries(config.time_series);
+            populateArrayFields('time-series', 'time-series-container', config.time_series);
+            //populateTimeSeries(config.time_series);
 
         if (Array.isArray(config.exit_time_series))
-            populateExitTimeSeries(config.exit_time_series);
+            populateArrayFields('exit-time-series', 'exit-time-series-container', config.exit_time_series);
 
-        populateEntryTradeConditions(config.entry_trade_conditions || []);
+        populateConfigBlocks(
+            config.entry_trade_conditions,
+            'entry-trade-condition',
+            entryConditionTypes,
+            addEntryTradeCondition
+        );
 
-        populateExitTradeConditions(config.exit_trade_conditions || []);
+        populateConfigBlocks(
+            config.exit_trade_conditions,
+            'exit-trade-condition',
+            exitConditionTypes,
+            addExitTradeCondition
+        );
 
-        populateBuyStrategy(config.buy_strategy || {});
-
-        populateSellStrategy(config.sell_strategy || {});
-
-        populateExitStrategy(config.exit_strategy || {});
-
+        populateConfigBlocks(
+            [config.buy_strategy],           // wrap in array since it's a single object
+            'buy-strategy',
+            buyStrategyTypes,
+            addBuyStrategy
+        );
+        populateConfigBlocks(
+            [config.sell_strategy],          // wrap in array since it's a single object
+            'sell-strategy',
+            sellStrategyTypes,
+            addSellStrategy
+        );
+        populateConfigBlocks(
+            [config.exit_strategy],
+            'exit-strategy',
+            exitStrategyTypes,
+            addExitStrategy
+        );
 
         // === Indicators ===
         document.getElementById('indicators-container').innerHTML = '';
@@ -457,8 +484,6 @@
 
         document.getElementById('num-identify-entries').value = identifyEntryCount;
 
-
-
         // === Identify Exits ===
         document.getElementById('identify-exit-container').innerHTML = '';
         identifyExitCount = 0;
@@ -514,71 +539,55 @@
         populateArrayFields('exit-time-series', 'exit-time-series-container', values);
     }
 
-    function populateEntryTradeConditions(conditions) {
-        conditions.forEach((condition, index) => {
-            addEntryTradeCondition();
-            const typeEl = document.querySelector(`[name="entry-trade-condition-${index}-type"]`);
-            if (typeEl) {
-                typeEl.value = condition.type;
-                updateArgsFields(entryConditionTypes, 'entry-trade-condition', index);
-                setArgsFields(condition.args, 'entry-trade-condition', index);
+    function populateConfigBlocks(configArray, prefix, typeMap, addBlockFn) {
+        configArray.forEach((item, index) => {
+            // Add the block
+            addBlockFn();
+
+            // Select the type dropdown
+            const typeEl = document.querySelector(`[name="${prefix}_type_${index}"]`);
+            if (!typeEl) {
+                console.warn(`No type element found for ${prefix} index ${index}`);
+                return;
             }
+
+            // Set the type
+            typeEl.value = item.type;
+
+            // Generate argument input fields
+            updateArgsFields(typeMap, prefix, index);
+
+            // Populate argument values
+            setArgsFields(item.args || [], prefix, index, typeMap);
         });
     }
 
-    function populateExitTradeConditions(conditions) {
-        conditions.forEach((condition, index) => {
-            addExitTradeCondition(); 
-            const typeEl = document.querySelector(`[name="exit-trade-condition-${index}-type"]`);
-            if (typeEl) {
-                typeEl.value = condition.type;
-                updateArgsFields(exitConditionTypes, 'exit-trade-condition', index); // similar to entryConditionTypes
-                setArgsFields(condition.args, 'exit-trade-condition', index);
-            }
-        });
-    }
-
-    function populateBuyStrategy(strategy) {
-        addBuyStrategy(); 
-        const typeEl = document.querySelector(`[name="buy-strategy-type"]`);
-        if (typeEl) {
-            typeEl.value = strategy.type;
-            updateArgsFields(buyStrategyTypes, 'buy-strategy', 0);  // single-object, index 0
-            setArgsFields(strategy.args || {}, 'buy-strategy', 0);
-        }
-    }
-
-
-    function populateSellStrategy(strategy) {
-        addSellStrategy()
-        const typeEl = document.querySelector(`[name="sell-strategy-type"]`);
-        if (typeEl) {
-            typeEl.value = strategy.type;
-            updateArgsFields(sellStrategyTypes, 'sell-strategy', 0);
-            setArgsFields(strategy.args, 'sell-strategy', 0);
-        }
-    }
-
-    function populateExitStrategy(strategy) {
-        addExitStrategy()
-        const typeEl = document.querySelector(`[name="exit-strategy-type"]`);
-        if (typeEl) {
-            typeEl.value = strategy.type;
-            updateArgsFields(exitStrategyTypes, 'exit-strategy', 0);
-            setArgsFields(strategy.args, 'exit-strategy', 0);
-        }
-    }
-
-    function setArgsFields(args, blockPrefix, index) {
+    function setArgsFields(args, prefix, index, typeMap) {
         if (!Array.isArray(args)) return;
-        args.forEach((arg, argIndex) => {
-            const argEl = document.querySelector(`[name="${blockPrefix}-${index}-arg${argIndex}"]`);
-            if (argEl) argEl.value = arg;
+
+        // Get selected type to know parameter names
+        const select = document.querySelector(`[name="${prefix}_type_${index}"]`);
+        if (!select) return;
+        const selectedType = select.value;
+
+        // Use provided typeMap or fallback to empty object
+        const map = typeMap || {};
+
+        const paramNames = map[selectedType] || [];
+
+        args.forEach((argValue, argIndex) => {
+            const paramName = paramNames[argIndex] || `arg${argIndex}`;
+            const argEl = document.querySelector(
+                `[name="${prefix}_arg_${index}_${paramName}"]`
+            );
+            if (argEl) {
+                argEl.value = argValue;
+            } else {
+                console.warn(`No input found for ${prefix}_arg_${index}_${paramName}`);
+            }
         });
     }
     </script>
-
-
 </body>
 </html>
 

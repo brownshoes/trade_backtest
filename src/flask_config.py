@@ -40,33 +40,42 @@ def config():
             value for key, value in request.form.items() if key.startswith('exit-time-series-')
         ]
 
-        # Handle indicators
-        indicators = []
-        num_indicators = int(request.form['num_indicators'])
-        for i in range(num_indicators):
-            type_ = request.form[f'indicator_type_{i}']
-            args_raw = request.form.getlist(f'indicator_args_{i}')
-            args = [int(arg) if arg.isdigit() else arg for arg in args_raw]
-            indicators.append({"type": type_, "args": args})
-        config_data['indicators'] = indicators
+        # --- Indicators ---
+        config_data['indicators'] = parse_indicators(request.form)
+
+        # --- Identify entry/exit ---
+        config_data['identify_entry'] = parse_identify_rules(request.form, "identify_entry")
+        config_data['identify_exit'] = parse_identify_rules(request.form, "identify_exit")
+
+
+
+        # # Handle indicators
+        # indicators = []
+        # num_indicators = int(request.form['num_indicators'])
+        # for i in range(num_indicators):
+        #     type_ = request.form[f'indicator_type_{i}']
+        #     args_raw = request.form.getlist(f'indicator_args_{i}')
+        #     args = [int(arg) if arg.isdigit() else arg for arg in args_raw]
+        #     indicators.append({"type": type_, "args": args})
+        # config_data['indicators'] = indicators
 
         # Handle identify_entry
-        identify_entry = []
-        num_entry_rules = int(request.form.get('num_entry_rules', 0))
-        for i in range(num_entry_rules):
-            rule_type = request.form.get(f'entry_type_{i}')
-            indicator_idx = int(request.form.get(f'entry_indicator_index_{i}', 0))
-            identify_entry.append({"type": rule_type, "indicator_ref_index": indicator_idx})
-        config_data['identify_entry'] = identify_entry
+        # identify_entry = []
+        # num_entry_rules = int(request.form.get('num_entry_rules', 0))
+        # for i in range(num_entry_rules):
+        #     rule_type = request.form.get(f'entry_type_{i}')
+        #     indicator_idx = int(request.form.get(f'entry_indicator_index_{i}', 0))
+        #     identify_entry.append({"type": rule_type, "indicator_ref_index": indicator_idx})
+        # config_data['identify_entry'] = identify_entry
 
-        # Handle identify_exit
-        identify_exit = []
-        num_exit_rules = int(request.form.get('num_exit_rules', 0))
-        for i in range(num_exit_rules):
-            rule_type = request.form.get(f'exit_type_{i}')
-            indicator_idx = int(request.form.get(f'exit_indicator_index_{i}', 0))
-            identify_exit.append({"type": rule_type, "indicator_ref_index": indicator_idx})
-        config_data['identify_exit'] = identify_exit
+        # # Handle identify_exit
+        # identify_exit = []
+        # num_exit_rules = int(request.form.get('num_exit_rules', 0))
+        # for i in range(num_exit_rules):
+        #     rule_type = request.form.get(f'exit_type_{i}')
+        #     indicator_idx = int(request.form.get(f'exit_indicator_index_{i}', 0))
+        #     identify_exit.append({"type": rule_type, "indicator_ref_index": indicator_idx})
+        # config_data['identify_exit'] = identify_exit
 
         # Handle entry_trade_conditions
         entry_trade_conditions = []
@@ -131,6 +140,109 @@ def config():
         sell_strategy_classes=SELL_STRATEGIES_CLASSES,
         exit_strategy_classes=EXIT_STRATEGIES_CLASSES
     )
+
+# def parse_indicators(form_data):
+#     """
+#     Parse indicators from submitted form data.
+
+#     Expected keys:
+#       - num_indicators
+#       - indicator_type_0, indicator_type_1, ...
+#       - indicator_arg_0_<argname>, indicator_arg_1_<argname>, ...
+#     """
+#     indicators = []
+#     num_indicators = int(form_data.get('num_indicators', 0))
+
+#     for i in range(num_indicators):
+#         ind_type = form_data.get(f'indicator_type_{i}')
+#         if not ind_type:
+#             continue
+
+#         # Collect all args for this indicator
+#         args = []
+#         for key, value in form_data.items():
+#             if key.startswith(f'indicator_arg_{i}_') and value:
+#                 # Convert numeric args to int if possible
+#                 if value.isdigit():
+#                     args.append(int(value))
+#                 else:
+#                     args.append(value)
+
+#         indicators.append({
+#             "type": ind_type,
+#             "args": args
+#         })
+
+#     return indicators
+
+def parse_indicators(form_data):
+    indicators = []
+    num_indicators = int(form_data.get('num_indicators', 0))
+
+    for i in range(num_indicators):
+        ind_type = form_data.get(f'indicator_type_{i}')
+        if not ind_type:
+            continue
+
+        args = []
+        for key, value in form_data.items():
+            if key.startswith(f'indicator_arg_{i}_') and value:
+                args.append(int(value) if value.isdigit() else value)
+
+        indicators.append({"type": ind_type, "args": args})
+
+    return indicators
+
+
+def parse_identify_rules(form_data, block_name):
+    """
+    Parse identify_entry or identify_exit rules from form_data.
+
+    block_name: "identify_entry" or "identify_exit"
+    """
+    rules = []
+
+    # Map block_name to exact payload key for count
+    num_key_map = {
+        "identify_entry": "num_identify_entries",
+        "identify_exit": "num_identify_exits"
+    }
+    num_key = num_key_map.get(block_name)
+    if not num_key:
+        return rules
+
+    num_items_raw = form_data.get(num_key, 0)
+    print(f"{block_name}: {num_key} = {num_items_raw}")
+
+    try:
+        num_items = int(num_items_raw)
+    except ValueError:
+        num_items = 0
+
+    for i in range(num_items):
+        rule_type = form_data.get(f'{block_name}_type_{i}')
+        ref_raw = form_data.get(f'{block_name}_indicator_ref_{i}')
+        print(f"i={i}, rule_type={rule_type}, ref_raw={ref_raw}")
+
+        if not rule_type or ref_raw is None:
+            continue
+
+        try:
+            indicator_ref_index = int(ref_raw)
+        except ValueError:
+            indicator_ref_index = None
+
+        rules.append({
+            "type": rule_type,
+            "indicator_ref_index": indicator_ref_index
+        })
+
+    print(f"Parsed {block_name}: {rules}")
+    return rules
+
+
+
+
 
 
 
