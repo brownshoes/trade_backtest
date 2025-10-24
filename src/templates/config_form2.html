@@ -5,10 +5,11 @@
 <title>Trading Config Editor</title>
 <style>
 body { font-family: Arial, sans-serif; margin: 40px; }
-input, select, textarea { padding: 5px; margin: 5px; }
+input, select, textarea, button { padding: 5px; margin: 5px; }
 fieldset { margin-bottom: 20px; padding: 10px; }
 .block { border: 1px solid #ccc; padding: 10px; margin-top: 10px; border-radius: 5px; }
 button { margin-top: 5px; }
+select[multiple] { width: 200px; }
 </style>
 </head>
 <body>
@@ -60,8 +61,6 @@ button { margin-top: 5px; }
 <div id="exitContainer"></div>
 </fieldset>
 
-
-
 <!-- Submit Button -->
 <button type="button" id="submitBtn">Submit to Flask</button>
 
@@ -78,6 +77,26 @@ const indicatorSelect = document.getElementById('indicatorSelect');
 let indicatorsList = [];
 let nextRef = 1;
 
+// ==== Helper to Update Entry/Exit Select Options ====
+function updateIndicatorOptions(select, selectedRefs = []) {
+    select.innerHTML = '';
+    indicatorsList.forEach(ind => {
+        const option = document.createElement('option');
+        option.value = ind.ref;
+        option.textContent = `${ind.type} (Ref: ${ind.ref})`;
+        if (selectedRefs.includes(String(ind.ref))) option.selected = true;
+        select.appendChild(option);
+    });
+}
+
+function refreshAllEntryExitSelects() {
+    document.querySelectorAll('#entryContainer select, #exitContainer select')
+        .forEach(select => {
+            const selected = Array.from(select.selectedOptions).map(o => o.value);
+            updateIndicatorOptions(select, selected);
+        });
+}
+
 // ==== Add Indicator ====
 document.getElementById('addIndicatorBtn').addEventListener('click', () => {
   const type = indicatorSelect.value;
@@ -86,40 +105,42 @@ document.getElementById('addIndicatorBtn').addEventListener('click', () => {
 });
 
 function addIndicator(type, args = [], ref = null) {
-  const argNames = INDICATOR_CLASSES[type] || [];
-  ref = ref || nextRef++;
-  const div = document.createElement('div');
-  div.className = 'block';
-  div.dataset.ref = ref;
+    const argNames = INDICATOR_CLASSES[type] || [];
+    ref = ref || nextRef++;
+    const div = document.createElement('div');
+    div.className = 'block';
+    div.dataset.ref = ref;
 
-  const title = document.createElement('h3');
-  title.textContent = `${type} (Ref: ${ref})`;
-  div.appendChild(title);
+    const title = document.createElement('h3');
+    title.textContent = `${type} (Ref: ${ref})`;
+    div.appendChild(title);
 
-  const inputs = [];
-  argNames.forEach((argName, i) => {
-    const label = document.createElement('label');
-    label.textContent = argName + ": ";
-    const input = document.createElement('input');
-    input.type = 'text';
-    input.value = args[i] || '';
-    div.appendChild(label);
-    div.appendChild(input);
-    div.appendChild(document.createElement('br'));
-    inputs.push(input);
-  });
+    const inputs = [];
+    argNames.forEach((argName, i) => {
+        const label = document.createElement('label');
+        label.textContent = argName + ": ";
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.value = args[i] || '';
+        div.appendChild(label);
+        div.appendChild(input);
+        div.appendChild(document.createElement('br'));
+        inputs.push(input);
+    });
 
-  const removeBtn = document.createElement('button');
-  removeBtn.textContent = 'Remove';
-  removeBtn.type = 'button';
-  removeBtn.onclick = () => {
-    div.remove();
-    indicatorsList = indicatorsList.filter(ind => ind.ref !== ref);
-  };
-  div.appendChild(removeBtn);
+    const removeBtn = document.createElement('button');
+    removeBtn.textContent = 'Remove';
+    removeBtn.type = 'button';
+    removeBtn.onclick = () => {
+        div.remove();
+        indicatorsList = indicatorsList.filter(ind => ind.ref !== ref);
+        refreshAllEntryExitSelects();
+    };
+    div.appendChild(removeBtn);
 
-  indicatorsContainer.appendChild(div);
-  indicatorsList.push({ref, type, args: inputs});
+    indicatorsContainer.appendChild(div);
+    indicatorsList.push({ref, type, args: inputs});
+    refreshAllEntryExitSelects();
 }
 
 // ==== Add Entry ====
@@ -129,7 +150,7 @@ document.getElementById('addEntryBtn').addEventListener('click', () => {
     addEntry(type);
 });
 
-function addEntry(type, indicator_ref = "") {
+function addEntry(type, selectedRefs = []) {
     const div = document.createElement('div');
     div.className = 'block';
 
@@ -138,14 +159,15 @@ function addEntry(type, indicator_ref = "") {
     div.appendChild(title);
 
     const label = document.createElement('label');
-    label.textContent = "Indicator Ref(s) (comma separated): ";
-    const textarea = document.createElement('textarea');
-    textarea.rows = 2;
-    textarea.cols = 30;
-    textarea.value = indicator_ref;
+    label.textContent = "Select Indicator Ref(s): ";
     div.appendChild(label);
     div.appendChild(document.createElement('br'));
-    div.appendChild(textarea);
+
+    const select = document.createElement('select');
+    select.multiple = true;
+    select.size = 3;
+    updateIndicatorOptions(select, selectedRefs);
+    div.appendChild(select);
 
     const removeBtn = document.createElement('button');
     removeBtn.textContent = 'Remove';
@@ -164,7 +186,7 @@ document.getElementById('addExitBtn').addEventListener('click', () => {
     addExit(type);
 });
 
-function addExit(type, indicator_ref = "") {
+function addExit(type, selectedRefs = []) {
     const div = document.createElement('div');
     div.className = 'block';
 
@@ -173,14 +195,15 @@ function addExit(type, indicator_ref = "") {
     div.appendChild(title);
 
     const label = document.createElement('label');
-    label.textContent = "Indicator Ref(s) (comma separated): ";
-    const textarea = document.createElement('textarea');
-    textarea.rows = 2;
-    textarea.cols = 30;
-    textarea.value = indicator_ref;
+    label.textContent = "Select Indicator Ref(s): ";
     div.appendChild(label);
     div.appendChild(document.createElement('br'));
-    div.appendChild(textarea);
+
+    const select = document.createElement('select');
+    select.multiple = true;
+    select.size = 3;
+    updateIndicatorOptions(select, selectedRefs);
+    div.appendChild(select);
 
     const removeBtn = document.createElement('button');
     removeBtn.textContent = 'Remove';
@@ -225,11 +248,11 @@ function loadFromJSON(data) {
     }
 
     if (data.identify_entry) {
-        data.identify_entry.forEach(entry => addEntry(entry.type, (entry.indicator_ref || []).join(',')));
+        data.identify_entry.forEach(entry => addEntry(entry.type, (entry.indicator_ref || []).map(String)));
     }
 
     if (data.identify_exit) {
-        data.identify_exit.forEach(exit => addExit(exit.type, (exit.indicator_ref || []).join(',')));
+        data.identify_exit.forEach(exit => addExit(exit.type, (exit.indicator_ref || []).map(String)));
     }
 }
 
@@ -237,14 +260,14 @@ function loadFromJSON(data) {
 function getEntries() {
     return Array.from(document.querySelectorAll('#entryContainer .block')).map(block => ({
         type: block.querySelector('h3').textContent,
-        indicator_ref: block.querySelector('textarea').value.split(',').map(s => s.trim()).filter(s => s)
+        indicator_ref: Array.from(block.querySelector('select').selectedOptions).map(o => o.value)
     }));
 }
 
 function getExits() {
     return Array.from(document.querySelectorAll('#exitContainer .block')).map(block => ({
         type: block.querySelector('h3').textContent,
-        indicator_ref: block.querySelector('textarea').value.split(',').map(s => s.trim()).filter(s => s)
+        indicator_ref: Array.from(block.querySelector('select').selectedOptions).map(o => o.value)
     }));
 }
 
