@@ -356,237 +356,232 @@
         }
 
     </script>
+
     <script>
-    function populateFormFromJSON(config) {
-        // === General Fields ===
-        for (const key in config) {
-            const el = document.querySelector(`[name="${key}"]`);
-            if (el) {
-                if (el.type === 'checkbox') {
-                    el.checked = !!config[key]; 
-                } else {
-                    el.value = config[key];
+        // ==================== Populate Form From JSON ====================
+        function populateFormFromJSON(config) {
+            // --- 1. General Fields ---
+            // Populate standard inputs and checkboxes (name matches key)
+            for (const key in config) {
+                const el = document.querySelector(`[name="${key}"]`);
+                if (el) {
+                    if (el.type === 'checkbox') {
+                        el.checked = !!config[key]; // Ensure boolean value
+                    } else {
+                        el.value = config[key];
+                    }
                 }
             }
+
+            // --- 2. Time Series Arrays ---
+            // Populate main time series fields
+            if (Array.isArray(config.time_series)) {
+                populateArrayFields('time-series', 'time-series-container', config.time_series);
+            }
+
+            // Populate exit time series fields
+            if (Array.isArray(config.exit_time_series)) {
+                populateArrayFields('exit-time-series', 'exit-time-series-container', config.exit_time_series);
+            }
+
+            // --- 3. Indicators ---
+            populateIndicators(config);
+
+            // --- 4. Trade Conditions ---
+            // Entry trade conditions
+            populateConfigBlocks(
+                config.entry_trade_conditions,
+                'entry-trade-condition',
+                entryConditionTypes,
+                addEntryTradeCondition
+            );
+
+            // Exit trade conditions
+            populateConfigBlocks(
+                config.exit_trade_conditions,
+                'exit-trade-condition',
+                exitConditionTypes,
+                addExitTradeCondition
+            );
+
+            // --- 5. Strategies ---
+            // Buy strategy (wrap single object in array)
+            populateConfigBlocks(
+                [config.buy_strategy],
+                'buy-strategy',
+                buyStrategyTypes,
+                addBuyStrategy
+            );
+
+            // Sell strategy
+            populateConfigBlocks(
+                [config.sell_strategy],
+                'sell-strategy',
+                sellStrategyTypes,
+                addSellStrategy
+            );
+
+            // Exit strategy
+            populateConfigBlocks(
+                [config.exit_strategy],
+                'exit-strategy',
+                exitStrategyTypes,
+                addExitStrategy
+            );
+
+            // --- 6. Identify Entry Blocks ---
+            populateIdentifyBlocks(
+                config.identify_entry,
+                'identify-entry-container',
+                identifyEntryClasses,
+                'identify_entry',
+                config.indicators
+            );
+
+            // --- 7. Identify Exit Blocks ---
+            populateIdentifyBlocks(
+                config.identify_exit,
+                'identify-exit-container',
+                identifyExitClasses,
+                'identify_exit',
+                config.indicators
+            );
         }
 
-        if (Array.isArray(config.time_series))
-            populateArrayFields('time-series', 'time-series-container', config.time_series);
-            //populateTimeSeries(config.time_series);
+        function populateIndicators(config) {
+            const container = document.getElementById('indicators-container');
+            container.innerHTML = '';  // Clear previous blocks
+            let indicatorCount = 0;
 
-        if (Array.isArray(config.exit_time_series))
-            populateArrayFields('exit-time-series', 'exit-time-series-container', config.exit_time_series);
+            config.indicators?.forEach(ind => {
+                // 1️⃣ Create the block
+                const block = createConfigBlock('indicator', indicatorClasses, indicatorCount, 'indicator', true, true);
 
-        populateConfigBlocks(
-            config.entry_trade_conditions,
-            'entry-trade-condition',
-            entryConditionTypes,
-            addEntryTradeCondition
-        );
+                // 2️⃣ Set type select
+                const select = block.querySelector(`select[name="indicator_type_${indicatorCount}"]`);
+                if (select) select.value = ind.type;
 
-        populateConfigBlocks(
-            config.exit_trade_conditions,
-            'exit-trade-condition',
-            exitConditionTypes,
-            addExitTradeCondition
-        );
+                // 3️⃣ Populate args
+                const argsDiv = block.querySelector(`#indicator_args_${indicatorCount}`);
+                const params = indicatorClasses[ind.type] || [];
+                params.forEach((param, i) => {
+                    const input = document.createElement('input');
+                    input.type = 'text';
+                    input.name = `indicator_arg_${indicatorCount}_${param}`;
+                    input.placeholder = param;
+                    input.value = ind.args?.[i] ?? '';  // safe access
+                    argsDiv.appendChild(input);
+                });
 
-        populateConfigBlocks(
-            [config.buy_strategy],           // wrap in array since it's a single object
-            'buy-strategy',
-            buyStrategyTypes,
-            addBuyStrategy
-        );
-        populateConfigBlocks(
-            [config.sell_strategy],          // wrap in array since it's a single object
-            'sell-strategy',
-            sellStrategyTypes,
-            addSellStrategy
-        );
-        populateConfigBlocks(
-            [config.exit_strategy],
-            'exit-strategy',
-            exitStrategyTypes,
-            addExitStrategy
-        );
+                // 4️⃣ Append block to container
+                container.appendChild(block);
 
-        // === Indicators ===
-        document.getElementById('indicators-container').innerHTML = '';
-        indicatorCount = 0;
-        config.indicators.forEach(ind => {
-            const block = createConfigBlock('indicator', indicatorClasses, indicatorCount, 'indicator', true, true);
-            const select = block.querySelector(`select[name="indicator_type_${indicatorCount}"]`);
-            if (select) select.value = ind.type;
-
-            const argsDiv = block.querySelector(`#indicator_args_${indicatorCount}`);
-            const params = indicatorClasses[ind.type] || [];
-            params.forEach((param, i) => {
-                const input = document.createElement('input');
-                input.type = 'text';
-                input.name = `indicator_arg_${indicatorCount}_${param}`;
-                input.placeholder = param;
-                input.value = ind.args[i] || '';
-                argsDiv.appendChild(input);
+                indicatorCount++;
             });
 
-            document.getElementById('indicators-container').appendChild(block);
-            indicatorCount++;
+            // 5️⃣ Update hidden count field
+            const numField = document.getElementById('num-indicators');
+            if (numField) numField.value = indicatorCount;
+        }
 
-            console.log('Block:', block);
+        function populateIdentifyBlocks(configArray, containerId, blockClasses, prefix, indicators) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = ''; // clear previous
+            let count = 0;
 
-        });
-        document.getElementById('num-indicators').value = indicatorCount;
+            configArray?.forEach(item => {
+                const index = count;
 
+                // 1️⃣ Create the block
+                const block = createConfigBlock(prefix.replace('_', '-'), blockClasses, index, prefix, true);
 
+                // 2️⃣ Add indicator_ref_index dropdown
+                const label = document.createElement('label');
+                label.textContent = 'Indicator Ref Index: ';
 
-        // === Identify Entries ===
-        document.getElementById('identify-entry-container').innerHTML = '';
-        identifyEntryCount = 0;
-        config.identify_entry?.forEach(entry => {
-            const index = identifyEntryCount;
+                const refSelect = document.createElement('select');
+                refSelect.name = `${prefix}_indicator_ref_${index}`;
 
-            // ✅ 1. Create the block first
-            const block = createConfigBlock('identify-entry', identifyEntryClasses, index, 'identify_entry', true);
+                indicators.forEach((ind, idx) => {
+                    const option = document.createElement('option');
+                    option.value = idx;
+                    option.textContent = `${ind.type} (index ${idx})`;
+                    if (idx === item.indicator_ref_index) {
+                        option.selected = true;
+                    }
+                    refSelect.appendChild(option);
+                });
 
-            // ✅ 2. Add indicator_ref_index dropdown
-            const label = document.createElement('label');
-            label.textContent = 'Indicator Ref Index: ';
+                block.appendChild(document.createElement('br'));
+                block.appendChild(label);
+                block.appendChild(refSelect);
 
-            const refSelect = document.createElement('select');
-            refSelect.name = `identify_entry_indicator_ref_${index}`;
+                // 3️⃣ Append block to container
+                container.appendChild(block);
 
-            config.indicators.forEach((ind, idx) => {
-                const option = document.createElement('option');
-                option.value = idx;
-                option.textContent = `${ind.type} (index ${idx})`;
-                if (idx === entry.indicator_ref_index) {
-                    option.selected = true;
+                // 4️⃣ Set type and trigger change to populate args
+                const typeSelect = block.querySelector(`select[name="${prefix}_type_${index}"]`);
+                if (typeSelect) {
+                    typeSelect.value = item.type;
+                    typeSelect.dispatchEvent(new Event('change'));
                 }
-                refSelect.appendChild(option);
+
+                count++;
             });
 
-            block.appendChild(document.createElement('br'));
-            block.appendChild(label);
-            block.appendChild(refSelect);
+            // 5️⃣ Update hidden count field
+            const countField = document.getElementById(`num-${prefix.replace('_', '-')}`);
+            if (countField) countField.value = count;
+        }
+        
+        function populateConfigBlocks(configArray, prefix, typeMap, addBlockFn) {
+            configArray.forEach((item, index) => {
+                // Add the block
+                addBlockFn();
 
-            // ✅ 3. Append the block to DOM BEFORE dispatching change
-            document.getElementById('identify-entry-container').appendChild(block);
-
-            // ✅ 4. Set dropdown and trigger change
-            const select = block.querySelector(`select[name="identify_entry_type_${index}"]`);
-            if (select) {
-                select.value = entry.type;
-                select.dispatchEvent(new Event('change'));
-            }
-
-            identifyEntryCount++;
-        });
-
-        document.getElementById('num-identify-entries').value = identifyEntryCount;
-
-        // === Identify Exits ===
-        document.getElementById('identify-exit-container').innerHTML = '';
-        identifyExitCount = 0;
-
-        config.identify_exit?.forEach(exit => {
-            const index = identifyExitCount;
-
-            // ✅ 1. Create the block
-            const block = createConfigBlock('identify-exit', identifyExitClasses, index, 'identify_exit', true);
-
-            // ✅ 2. Create and append the indicator_ref_index dropdown
-            const label = document.createElement('label');
-            label.textContent = 'Indicator Ref Index: ';
-
-            const refSelect = document.createElement('select');
-            refSelect.name = `identify_exit_indicator_ref_${index}`;
-
-            config.indicators.forEach((ind, idx) => {
-                const option = document.createElement('option');
-                option.value = idx;
-                option.textContent = `${ind.type} (index ${idx})`;
-                if (idx === exit.indicator_ref_index) {
-                    option.selected = true;
+                // Select the type dropdown
+                const typeEl = document.querySelector(`[name="${prefix}_type_${index}"]`);
+                if (!typeEl) {
+                    console.warn(`No type element found for ${prefix} index ${index}`);
+                    return;
                 }
-                refSelect.appendChild(option);
+
+                // Set the type
+                typeEl.value = item.type;
+
+                // Generate argument input fields
+                updateArgsFields(typeMap, prefix, index);
+
+                // Populate argument values
+                setArgsFields(item.args || [], prefix, index, typeMap);
             });
+        }
 
-            block.appendChild(document.createElement('br'));
-            block.appendChild(label);
-            block.appendChild(refSelect);
+        function setArgsFields(args, prefix, index, typeMap) {
+            if (!Array.isArray(args)) return;
 
-            // ✅ 3. Append the block to the DOM BEFORE dispatching change event
-            document.getElementById('identify-exit-container').appendChild(block);
+            // Get selected type to know parameter names
+            const select = document.querySelector(`[name="${prefix}_type_${index}"]`);
+            if (!select) return;
+            const selectedType = select.value;
 
-            // ✅ 4. Set the select value and dispatch 'change' to populate args
-            const select = block.querySelector(`select[name="identify_exit_type_${index}"]`);
-            if (select) {
-                select.value = exit.type;
-                select.dispatchEvent(new Event('change'));
-            }
+            // Use provided typeMap or fallback to empty object
+            const map = typeMap || {};
 
-            identifyExitCount++;
-        });
+            const paramNames = map[selectedType] || [];
 
-        document.getElementById('num-identify-exits').value = identifyExitCount;
-    }
-
-    function populateTimeSeries(values) {
-        populateArrayFields('time-series', 'time-series-container', values);
-    }
-
-    function populateExitTimeSeries(values) {
-        populateArrayFields('exit-time-series', 'exit-time-series-container', values);
-    }
-
-    function populateConfigBlocks(configArray, prefix, typeMap, addBlockFn) {
-        configArray.forEach((item, index) => {
-            // Add the block
-            addBlockFn();
-
-            // Select the type dropdown
-            const typeEl = document.querySelector(`[name="${prefix}_type_${index}"]`);
-            if (!typeEl) {
-                console.warn(`No type element found for ${prefix} index ${index}`);
-                return;
-            }
-
-            // Set the type
-            typeEl.value = item.type;
-
-            // Generate argument input fields
-            updateArgsFields(typeMap, prefix, index);
-
-            // Populate argument values
-            setArgsFields(item.args || [], prefix, index, typeMap);
-        });
-    }
-
-    function setArgsFields(args, prefix, index, typeMap) {
-        if (!Array.isArray(args)) return;
-
-        // Get selected type to know parameter names
-        const select = document.querySelector(`[name="${prefix}_type_${index}"]`);
-        if (!select) return;
-        const selectedType = select.value;
-
-        // Use provided typeMap or fallback to empty object
-        const map = typeMap || {};
-
-        const paramNames = map[selectedType] || [];
-
-        args.forEach((argValue, argIndex) => {
-            const paramName = paramNames[argIndex] || `arg${argIndex}`;
-            const argEl = document.querySelector(
-                `[name="${prefix}_arg_${index}_${paramName}"]`
-            );
-            if (argEl) {
-                argEl.value = argValue;
-            } else {
-                console.warn(`No input found for ${prefix}_arg_${index}_${paramName}`);
-            }
-        });
-    }
+            args.forEach((argValue, argIndex) => {
+                const paramName = paramNames[argIndex] || `arg${argIndex}`;
+                const argEl = document.querySelector(
+                    `[name="${prefix}_arg_${index}_${paramName}"]`
+                );
+                if (argEl) {
+                    argEl.value = argValue;
+                } else {
+                    console.warn(`No input found for ${prefix}_arg_${index}_${paramName}`);
+                }
+            });
+        }
     </script>
 </body>
 </html>
