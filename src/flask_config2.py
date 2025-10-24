@@ -15,8 +15,12 @@ def index():
         identify_entry_classes=IDENTIFY_ENTRY_CLASSES,
         identify_exit_classes=IDENTIFY_EXIT_CLASSES,
         entry_trade_conditions_classes=ENTRY_TRADE_CONDITIONS_CLASSES,
-        exit_trade_conditions_classes=EXIT_TRADE_CONDITIONS_CLASSES
+        exit_trade_conditions_classes=EXIT_TRADE_CONDITIONS_CLASSES,
+        buy_strategies_classes=BUY_STRATEGIES_CLASSES,
+        sell_strategies_classes=SELL_STRATEGIES_CLASSES,
+        exit_strategies_classes=EXIT_STRATEGIES_CLASSES
     )
+
 
 
 

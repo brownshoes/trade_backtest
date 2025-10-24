@@ -89,6 +89,48 @@ select[multiple] { width: 200px; }
 <div id="exitConditionsContainer"></div>
 </fieldset>
 
+<!-- BUY STRATEGY SECTION -->
+<fieldset>
+  <legend>Buy Strategy</legend>
+  <label for="buyStrategySelect">Select Buy Strategy:</label>
+  <select id="buyStrategySelect">
+    <option value="">-- Select --</option>
+    {% for key in buy_strategies_classes %}
+      <option value="{{ key }}">{{ key }}</option>
+    {% endfor %}
+  </select>
+  <button type="button" id="addBuyStrategyBtn">Add Buy Strategy</button>
+  <div id="buyStrategyContainer"></div>
+</fieldset>
+
+<!-- SELL STRATEGY SECTION -->
+<fieldset>
+  <legend>Sell Strategy</legend>
+  <label for="sellStrategySelect">Select Sell Strategy:</label>
+  <select id="sellStrategySelect">
+    <option value="">-- Select --</option>
+    {% for key in sell_strategies_classes %}
+      <option value="{{ key }}">{{ key }}</option>
+    {% endfor %}
+  </select>
+  <button type="button" id="addSellStrategyBtn">Add Sell Strategy</button>
+  <div id="sellStrategyContainer"></div>
+</fieldset>
+
+<!-- EXIT STRATEGY SECTION -->
+<fieldset>
+  <legend>Exit Strategy</legend>
+  <label for="exitStrategySelect">Select Exit Strategy:</label>
+  <select id="exitStrategySelect">
+    <option value="">-- Select --</option>
+    {% for key in exit_strategies_classes %}
+      <option value="{{ key }}">{{ key }}</option>
+    {% endfor %}
+  </select>
+  <button type="button" id="addExitStrategyBtn">Add Exit Strategy</button>
+  <div id="exitStrategyContainer"></div>
+</fieldset>
+
 
 <!-- Submit Button -->
 <button type="button" id="submitBtn">Submit to Flask</button>
@@ -320,6 +362,130 @@ function addExitCondition(type, args = []) {
     document.getElementById('exitConditionsContainer').appendChild(div);
 }
 
+// ==== Globals for Strategies ====
+const BUY_STRATEGIES_CLASSES = {{ buy_strategies_classes | tojson }};
+const SELL_STRATEGIES_CLASSES = {{ sell_strategies_classes | tojson }};
+const EXIT_STRATEGIES_CLASSES = {{ exit_strategies_classes | tojson }};
+
+// ==== BUY STRATEGY ====
+document.getElementById('addBuyStrategyBtn').addEventListener('click', () => {
+    const type = document.getElementById('buyStrategySelect').value;
+    if (!type) return alert("Select a buy strategy first.");
+    addBuyStrategy(type);
+});
+
+function addBuyStrategy(type, args = []) {
+    const argNames = BUY_STRATEGIES_CLASSES[type] || [];
+    const container = document.getElementById('buyStrategyContainer');
+    container.innerHTML = ''; // only one buy strategy
+
+    const div = document.createElement('div');
+    div.className = 'block';
+
+    const title = document.createElement('h3');
+    title.textContent = type;
+    div.appendChild(title);
+
+    argNames.forEach((argName, i) => {
+        const label = document.createElement('label');
+        label.textContent = argName + ": ";
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.value = args[i] || '';
+        div.appendChild(label);
+        div.appendChild(input);
+        div.appendChild(document.createElement('br'));
+    });
+
+    const removeBtn = document.createElement('button');
+    removeBtn.textContent = 'Remove';
+    removeBtn.type = 'button';
+    removeBtn.onclick = () => container.innerHTML = '';
+    div.appendChild(removeBtn);
+
+    container.appendChild(div);
+}
+
+// ==== SELL STRATEGY ====
+document.getElementById('addSellStrategyBtn').addEventListener('click', () => {
+    const type = document.getElementById('sellStrategySelect').value;
+    if (!type) return alert("Select a sell strategy first.");
+    addSellStrategy(type);
+});
+
+function addSellStrategy(type, args = []) {
+    const argNames = SELL_STRATEGIES_CLASSES[type] || [];
+    const container = document.getElementById('sellStrategyContainer');
+    container.innerHTML = ''; // only one sell strategy
+
+    const div = document.createElement('div');
+    div.className = 'block';
+
+    const title = document.createElement('h3');
+    title.textContent = type;
+    div.appendChild(title);
+
+    argNames.forEach((argName, i) => {
+        const label = document.createElement('label');
+        label.textContent = argName + ": ";
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.value = args[i] || '';
+        div.appendChild(label);
+        div.appendChild(input);
+        div.appendChild(document.createElement('br'));
+    });
+
+    const removeBtn = document.createElement('button');
+    removeBtn.textContent = 'Remove';
+    removeBtn.type = 'button';
+    removeBtn.onclick = () => container.innerHTML = '';
+    div.appendChild(removeBtn);
+
+    container.appendChild(div);
+}
+
+// ==== EXIT STRATEGY ====
+document.getElementById('addExitStrategyBtn').addEventListener('click', () => {
+    const type = document.getElementById('exitStrategySelect').value;
+    if (!type) return alert("Select an exit strategy first.");
+    addExitStrategy(type);
+});
+
+function addExitStrategy(type, args = []) {
+    const argNames = EXIT_STRATEGIES_CLASSES[type] || [];
+    const container = document.getElementById('exitStrategyContainer');
+    container.innerHTML = ''; // only one exit strategy
+
+    const div = document.createElement('div');
+    div.className = 'block';
+
+    const title = document.createElement('h3');
+    title.textContent = type;
+    div.appendChild(title);
+
+    argNames.forEach((argName, i) => {
+        const label = document.createElement('label');
+        label.textContent = argName + ": ";
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.value = args[i] || '';
+        div.appendChild(label);
+        div.appendChild(input);
+        div.appendChild(document.createElement('br'));
+    });
+
+    const removeBtn = document.createElement('button');
+    removeBtn.textContent = 'Remove';
+    removeBtn.type = 'button';
+    removeBtn.onclick = () => container.innerHTML = '';
+    div.appendChild(removeBtn);
+
+    container.appendChild(div);
+}
+
+
+
 // ==== JSON Upload ====
 jsonInput.addEventListener('change', e => {
   const file = e.target.files[0];
@@ -372,6 +538,15 @@ function loadFromJSON(data) {
         data.exit_trade_conditions.forEach(cond => addExitCondition(cond.type, cond.args || []));
     }
 
+    if (data.buy_strategy) {
+        addBuyStrategy(data.buy_strategy.type, data.buy_strategy.args || []);
+    }
+    if (data.sell_strategy) {
+        addSellStrategy(data.sell_strategy.type, data.sell_strategy.args || []);
+    }
+    if (data.exit_strategy) {
+        addExitStrategy(data.exit_strategy.type, data.exit_strategy.args || []);
+    }
 }
 
 // ==== Collect Data ====
@@ -389,6 +564,14 @@ function getExits() {
     }));
 }
 
+function getStrategy(containerId) {
+    const block = document.querySelector(`#${containerId} .block`);
+    if (!block) return null;
+    const type = block.querySelector('h3').textContent;
+    const args = Array.from(block.querySelectorAll('input')).map(i => i.value);
+    return { type, args };
+}
+
 function collectData() {
     return {
         indicators: indicatorsList.map(ind => ({
@@ -398,14 +581,9 @@ function collectData() {
         })),
         identify_entry: getEntries(),
         identify_exit: getExits(),
-        entry_trade_conditions: Array.from(document.querySelectorAll('#entryConditionsContainer .block')).map(block => ({
-            type: block.querySelector('h3').textContent,
-            args: Array.from(block.querySelectorAll('input')).map(i => i.value)
-        })),
-        exit_trade_conditions: Array.from(document.querySelectorAll('#exitConditionsContainer .block')).map(block => ({
-            type: block.querySelector('h3').textContent,
-            args: Array.from(block.querySelectorAll('input')).map(i => i.value)
-        }))
+        buy_strategy: getStrategy('buyStrategyContainer'),
+        sell_strategy: getStrategy('sellStrategyContainer'),
+        exit_strategy: getStrategy('exitStrategyContainer')
     };
 }
 
