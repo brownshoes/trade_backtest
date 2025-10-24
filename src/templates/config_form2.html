@@ -61,6 +61,35 @@ select[multiple] { width: 200px; }
 <div id="exitContainer"></div>
 </fieldset>
 
+<!-- Entry Trade Conditions Section -->
+<fieldset>
+<legend>Entry Trade Conditions</legend>
+<label for="entryConditionSelect">Select Entry Trade Condition:</label>
+<select id="entryConditionSelect">
+  <option value="">-- Select --</option>
+  {% for key in entry_trade_conditions_classes %}
+    <option value="{{ key }}">{{ key }}</option>
+  {% endfor %}
+</select>
+<button type="button" id="addEntryConditionBtn">Add Condition</button>
+<div id="entryConditionsContainer"></div>
+</fieldset>
+
+<!-- Exit Trade Conditions Section -->
+<fieldset>
+<legend>Exit Trade Conditions</legend>
+<label for="exitConditionSelect">Select Exit Trade Condition:</label>
+<select id="exitConditionSelect">
+  <option value="">-- Select --</option>
+  {% for key in exit_trade_conditions_classes %}
+    <option value="{{ key }}">{{ key }}</option>
+  {% endfor %}
+</select>
+<button type="button" id="addExitConditionBtn">Add Condition</button>
+<div id="exitConditionsContainer"></div>
+</fieldset>
+
+
 <!-- Submit Button -->
 <button type="button" id="submitBtn">Submit to Flask</button>
 
@@ -215,6 +244,82 @@ function addExit(type, selectedRefs = []) {
     document.getElementById('exitContainer').appendChild(div);
 }
 
+// ==== Globals for Trade Conditions ====
+const ENTRY_TRADE_CONDITIONS = {{ entry_trade_conditions_classes | tojson }};
+const EXIT_TRADE_CONDITIONS = {{ exit_trade_conditions_classes | tojson }};
+
+// ==== Entry Trade Conditions ====
+document.getElementById('addEntryConditionBtn').addEventListener('click', () => {
+    const type = document.getElementById('entryConditionSelect').value;
+    if (!type) return alert("Select an entry trade condition first.");
+    addEntryCondition(type);
+});
+
+function addEntryCondition(type, args = []) {
+    const argNames = ENTRY_TRADE_CONDITIONS[type] || [];
+    const div = document.createElement('div');
+    div.className = 'block';
+
+    const title = document.createElement('h3');
+    title.textContent = type;
+    div.appendChild(title);
+
+    argNames.forEach((argName, i) => {
+        const label = document.createElement('label');
+        label.textContent = argName + ": ";
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.value = args[i] || '';
+        div.appendChild(label);
+        div.appendChild(input);
+        div.appendChild(document.createElement('br'));
+    });
+
+    const removeBtn = document.createElement('button');
+    removeBtn.textContent = 'Remove';
+    removeBtn.type = 'button';
+    removeBtn.onclick = () => div.remove();
+    div.appendChild(removeBtn);
+
+    document.getElementById('entryConditionsContainer').appendChild(div);
+}
+
+// ==== Exit Trade Conditions ====
+document.getElementById('addExitConditionBtn').addEventListener('click', () => {
+    const type = document.getElementById('exitConditionSelect').value;
+    if (!type) return alert("Select an exit trade condition first.");
+    addExitCondition(type);
+});
+
+function addExitCondition(type, args = []) {
+    const argNames = EXIT_TRADE_CONDITIONS[type] || [];
+    const div = document.createElement('div');
+    div.className = 'block';
+
+    const title = document.createElement('h3');
+    title.textContent = type;
+    div.appendChild(title);
+
+    argNames.forEach((argName, i) => {
+        const label = document.createElement('label');
+        label.textContent = argName + ": ";
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.value = args[i] || '';
+        div.appendChild(label);
+        div.appendChild(input);
+        div.appendChild(document.createElement('br'));
+    });
+
+    const removeBtn = document.createElement('button');
+    removeBtn.textContent = 'Remove';
+    removeBtn.type = 'button';
+    removeBtn.onclick = () => div.remove();
+    div.appendChild(removeBtn);
+
+    document.getElementById('exitConditionsContainer').appendChild(div);
+}
+
 // ==== JSON Upload ====
 jsonInput.addEventListener('change', e => {
   const file = e.target.files[0];
@@ -254,6 +359,19 @@ function loadFromJSON(data) {
     if (data.identify_exit) {
         data.identify_exit.forEach(exit => addExit(exit.type, (exit.indicator_ref || []).map(String)));
     }
+
+    // Entry Trade Conditions
+    document.getElementById('entryConditionsContainer').innerHTML = '';
+    if (data.entry_trade_conditions) {
+        data.entry_trade_conditions.forEach(cond => addEntryCondition(cond.type, cond.args || []));
+    }
+
+    // Exit Trade Conditions
+    document.getElementById('exitConditionsContainer').innerHTML = '';
+    if (data.exit_trade_conditions) {
+        data.exit_trade_conditions.forEach(cond => addExitCondition(cond.type, cond.args || []));
+    }
+
 }
 
 // ==== Collect Data ====
@@ -279,7 +397,15 @@ function collectData() {
             args: ind.args.map(i => i.value)
         })),
         identify_entry: getEntries(),
-        identify_exit: getExits()
+        identify_exit: getExits(),
+        entry_trade_conditions: Array.from(document.querySelectorAll('#entryConditionsContainer .block')).map(block => ({
+            type: block.querySelector('h3').textContent,
+            args: Array.from(block.querySelectorAll('input')).map(i => i.value)
+        })),
+        exit_trade_conditions: Array.from(document.querySelectorAll('#exitConditionsContainer .block')).map(block => ({
+            type: block.querySelector('h3').textContent,
+            args: Array.from(block.querySelectorAll('input')).map(i => i.value)
+        }))
     };
 }
 
