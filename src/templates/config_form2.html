@@ -19,6 +19,20 @@ select[multiple] { width: 200px; }
 <label>Upload JSON File:</label>
 <input type="file" id="jsonFileInput" accept=".json"><br><br>
 
+<!-- TIME SERIES SECTION -->
+<fieldset>
+  <legend>Time Series</legend>
+  <button type="button" id="addTimeSeriesBtn">Add Time Series</button>
+  <div id="timeSeriesContainer"></div>
+</fieldset>
+
+<!-- EXIT TIME SERIES SECTION -->
+<fieldset>
+  <legend>Exit Time Series</legend>
+  <button type="button" id="addExitTimeSeriesBtn">Add Exit Time Series</button>
+  <div id="exitTimeSeriesContainer"></div>
+</fieldset>
+
 <!-- Indicators Section -->
 <fieldset>
 <legend>Indicators</legend>
@@ -166,6 +180,50 @@ function refreshAllEntryExitSelects() {
             const selected = Array.from(select.selectedOptions).map(o => o.value);
             updateIndicatorOptions(select, selected);
         });
+}
+
+// ==== TIME SERIES ====
+document.getElementById('addTimeSeriesBtn').addEventListener('click', () => addTimeSeries());
+
+function addTimeSeries(value = "") {
+    const div = document.createElement('div');
+    div.className = 'block';
+
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.value = value;
+    input.placeholder = "e.g. 15m, 1h, 4h";
+    div.appendChild(input);
+
+    const removeBtn = document.createElement('button');
+    removeBtn.textContent = 'Remove';
+    removeBtn.type = 'button';
+    removeBtn.onclick = () => div.remove();
+    div.appendChild(removeBtn);
+
+    document.getElementById('timeSeriesContainer').appendChild(div);
+}
+
+// ==== EXIT TIME SERIES ====
+document.getElementById('addExitTimeSeriesBtn').addEventListener('click', () => addExitTimeSeries());
+
+function addExitTimeSeries(value = "") {
+    const div = document.createElement('div');
+    div.className = 'block';
+
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.value = value;
+    input.placeholder = "e.g. 15m, 1h, 4h";
+    div.appendChild(input);
+
+    const removeBtn = document.createElement('button');
+    removeBtn.textContent = 'Remove';
+    removeBtn.type = 'button';
+    removeBtn.onclick = () => div.remove();
+    div.appendChild(removeBtn);
+
+    document.getElementById('exitTimeSeriesContainer').appendChild(div);
 }
 
 // ==== Add Indicator ====
@@ -503,53 +561,119 @@ jsonInput.addEventListener('change', e => {
 });
 
 // ==== Load JSON ====
+// ==== Load JSON with error diagnostics ====
 function loadFromJSON(data) {
-    indicatorsContainer.innerHTML = '';
-    document.getElementById('entryContainer').innerHTML = '';
-    document.getElementById('exitContainer').innerHTML = '';
-    indicatorsList = [];
-    nextRef = 1;
+    try {
+        // Time series
+        if (data.time_series) {
+            data.time_series.forEach(ts => {
+                try {
+                    addTimeSeries(ts);
+                } catch (e) {
+                    console.error(`Failed to add time_series value: ${ts}`, e);
+                }
+            });
+        }
 
-    if (data.indicators) {
-        data.indicators.forEach(ind => {
-            const ref = ind.ref !== undefined ? ind.ref : nextRef++;
-            addIndicator(ind.type, ind.args || [], ref);
-            if (ref >= nextRef) nextRef = ref + 1;
+        if (data.exit_time_series) {
+            data.exit_time_series.forEach(ts => {
+                try {
+                    addExitTimeSeries(ts);
+                } catch (e) {
+                    console.error(`Failed to add exit_time_series value: ${ts}`, e);
+                }
+            });
+        }
+
+        // Reset containers
+        indicatorsContainer.innerHTML = '';
+        document.getElementById('entryContainer').innerHTML = '';
+        document.getElementById('exitContainer').innerHTML = '';
+        indicatorsList = [];
+        nextRef = 1;
+
+        // Indicators
+        (data.indicators || []).forEach(ind => {
+            try {
+                const ref = ind.ref ?? nextRef++;
+                addIndicator(ind.type, ind.args || [], ref);
+                if (ref >= nextRef) nextRef = ref + 1;
+            } catch (e) {
+                console.error('Failed to add indicator:', ind, e);
+            }
         });
-    }
 
-    if (data.identify_entry) {
-        data.identify_entry.forEach(entry => addEntry(entry.type, (entry.indicator_ref || []).map(String)));
-    }
+        // Identify Entry
+        (data.identify_entry || []).forEach(entry => {
+            try {
+                addEntry(entry.type, (entry.indicator_ref || []).map(String));
+            } catch (e) {
+                console.error('Failed to add identify_entry:', entry, e);
+            }
+        });
 
-    if (data.identify_exit) {
-        data.identify_exit.forEach(exit => addExit(exit.type, (exit.indicator_ref || []).map(String)));
-    }
+        // Identify Exit
+        (data.identify_exit || []).forEach(exit => {
+            try {
+                addExit(exit.type, (exit.indicator_ref || []).map(String));
+            } catch (e) {
+                console.error('Failed to add identify_exit:', exit, e);
+            }
+        });
 
-    // Entry Trade Conditions
-    document.getElementById('entryConditionsContainer').innerHTML = '';
-    if (data.entry_trade_conditions) {
-        data.entry_trade_conditions.forEach(cond => addEntryCondition(cond.type, cond.args || []));
-    }
+        // Entry Trade Conditions
+        document.getElementById('entryConditionsContainer').innerHTML = '';
+        (data.entry_trade_conditions || []).forEach(cond => {
+            try {
+                addEntryCondition(cond.type, cond.args || []);
+            } catch (e) {
+                console.error('Failed to add entry_trade_condition:', cond, e);
+            }
+        });
 
-    // Exit Trade Conditions
-    document.getElementById('exitConditionsContainer').innerHTML = '';
-    if (data.exit_trade_conditions) {
-        data.exit_trade_conditions.forEach(cond => addExitCondition(cond.type, cond.args || []));
-    }
+        // Exit Trade Conditions
+        document.getElementById('exitConditionsContainer').innerHTML = '';
+        (data.exit_trade_conditions || []).forEach(cond => {
+            try {
+                addExitCondition(cond.type, cond.args || []);
+            } catch (e) {
+                console.error('Failed to add exit_trade_condition:', cond, e);
+            }
+        });
 
-    if (data.buy_strategy) {
-        addBuyStrategy(data.buy_strategy.type, data.buy_strategy.args || []);
-    }
-    if (data.sell_strategy) {
-        addSellStrategy(data.sell_strategy.type, data.sell_strategy.args || []);
-    }
-    if (data.exit_strategy) {
-        addExitStrategy(data.exit_strategy.type, data.exit_strategy.args || []);
+        // Buy, Sell, Exit strategies
+        const buyStrategy = data.buy_strategy || { type: null, args: [] };
+        const sellStrategy = data.sell_strategy || { type: null, args: [] };
+        const exitStrategy = data.exit_strategy || { type: null, args: [] };
+
+        if (buyStrategy.type) {
+            try { addBuyStrategy(buyStrategy.type, buyStrategy.args); }
+            catch(e) { console.error('Failed to add buy_strategy:', buyStrategy, e); }
+        }
+
+        if (sellStrategy.type) {
+            try { addSellStrategy(sellStrategy.type, sellStrategy.args); }
+            catch(e) { console.error('Failed to add sell_strategy:', sellStrategy, e); }
+        }
+
+        if (exitStrategy.type) {
+            try { addExitStrategy(exitStrategy.type, exitStrategy.args); }
+            catch(e) { console.error('Failed to add exit_strategy:', exitStrategy, e); }
+        }
+
+    } catch (globalError) {
+        console.error('Failed to load JSON:', data, globalError);
     }
 }
 
+
 // ==== Collect Data ====
+function getTimeSeries(containerId) {
+    return Array.from(document.querySelectorAll(`#${containerId} input`))
+        .map(i => i.value.trim())
+        .filter(v => v);
+}
+
 function getEntries() {
     return Array.from(document.querySelectorAll('#entryContainer .block')).map(block => ({
         type: block.querySelector('h3').textContent,
@@ -574,6 +698,8 @@ function getStrategy(containerId) {
 
 function collectData() {
     return {
+        time_series: getTimeSeries('timeSeriesContainer'),
+        exit_time_series: getTimeSeries('exitTimeSeriesContainer'),
         indicators: indicatorsList.map(ind => ({
             ref: ind.ref,
             type: ind.type,
