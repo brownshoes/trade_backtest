@@ -4,213 +4,320 @@
 <meta charset="UTF-8">
 <title>Trading Config Editor</title>
 <style>
-body { font-family: Arial, sans-serif; margin: 40px; }
-input, select, textarea, button { padding: 5px; margin: 5px; }
-fieldset { margin-bottom: 20px; padding: 10px; }
-.block { border: 1px solid #ccc; padding: 10px; margin-top: 10px; border-radius: 5px; }
-button { margin-top: 5px; }
-select[multiple] { width: 200px; }
+body {
+  font-family: Arial, sans-serif;
+  margin: 20px;
+  background: #f9f9f9;
+}
+h1 {
+  margin-bottom: 20px;
+}
+fieldset {
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  margin-bottom: 15px;
+  padding: 10px;
+  background: #fff;
+}
+legend {
+  font-weight: bold;
+}
+.form-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.form-group {
+  flex: 1;
+  min-width: 150px;
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 8px;
+}
+input, select, button {
+  padding: 5px;
+  font-size: 0.9em;
+}
+button {
+  cursor: pointer;
+  margin-top: auto;
+}
+.block {
+  border: 1px solid #ddd;
+  padding: 10px;
+  margin-top: 5px;
+  border-radius: 5px;
+  background: #fafafa;
+}
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 5px;
+}
+
+/* Layout helpers */
+.dual-section, .conditions-row, .strategies-row {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+.dual-section fieldset, .conditions-row fieldset, .strategies-row > div {
+  flex: 1;
+  min-width: 300px;
+}
+.side-by-side {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+.left-col, .right-col {
+  flex: 1;
+  min-width: 300px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+/* Strategy section layout */
+.strategies-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-areas:
+    "buy sell"
+    "exit .";
+  gap: 20px;
+}
+.strategy-buy { grid-area: buy; }
+.strategy-sell { grid-area: sell; }
+.strategy-exit { grid-area: exit; }
+
+@media (max-width: 900px) {
+  .strategies-grid {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "buy"
+      "sell"
+      "exit";
+  }
+}
 </style>
 </head>
 <body>
+
 <h1>Trading Config Editor</h1>
 
-<!-- JSON Load -->
 <label>Upload JSON File:</label>
-<input type="file" id="jsonFileInput" accept=".json"><br><br>
+<input type="file" id="jsonFileInput" accept=".json">
 
-<fieldset id="generalConfig" class="config-fieldset">
-    <legend>General Configuration</legend>
-
+<!-- General Configuration -->
+<fieldset>
+  <legend>General Configuration</legend>
+  <div class="form-row">
     <div class="form-group">
-        <label for="name">Config Name:</label>
-        <input type="text" id="name" name="name" />
+      <label>Config Name</label>
+      <input type="text" id="name">
     </div>
-
     <div class="form-group">
-        <label for="mode">Mode:</label>
-        <select id="mode" name="mode">
-            <option value="BACKTEST">BACKTEST</option>
-            <option value="LIVE">LIVE</option>
+      <label>Mode</label>
+      <select id="mode">
+        <option value="BACKTEST">BACKTEST</option>
+        <option value="LIVE">LIVE</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Trade Enabled</label>
+      <input type="checkbox" id="trade">
+    </div>
+  </div>
+  <div class="form-row">
+    <div class="form-group">
+      <label>Start Time</label>
+      <input type="datetime-local" id="start_time">
+    </div>
+    <div class="form-group">
+      <label>End Time</label>
+      <input type="datetime-local" id="end_time">
+    </div>
+    <div class="form-group">
+      <label>Main Time Series</label>
+      <select id="main_time_series">
+        <option value="1m">1m</option>
+        <option value="5m">5m</option>
+        <option value="15m">15m</option>
+        <option value="1h">1h</option>
+        <option value="1d">1d</option>
+      </select>
+    </div>
+  </div>
+  <div class="form-row">
+    <div class="form-group">
+      <label>USD Holdings</label>
+      <input type="number" id="USD_holdings">
+    </div>
+    <div class="form-group">
+      <label>Coin Holdings</label>
+      <input type="number" id="coin_holdings">
+    </div>
+    <div class="form-group">
+      <label>Maker Fee</label>
+      <input type="number" step="0.001" id="maker_fee">
+    </div>
+    <div class="form-group">
+      <label>Taker Fee</label>
+      <input type="number" step="0.001" id="taker_fee">
+    </div>
+  </div>
+</fieldset>
+
+<!-- Time Series + Exit Time Series -->
+<div class="dual-section">
+  <fieldset>
+    <legend>Time Series</legend>
+    <div class="section-header">
+      <span>Time Series</span>
+      <button id="addTimeSeriesBtn">Add</button>
+    </div>
+    <div id="timeSeriesContainer" class="block"></div>
+  </fieldset>
+
+  <fieldset>
+    <legend>Exit Time Series</legend>
+    <div class="section-header">
+      <span>Exit Time Series</span>
+      <button id="addExitTimeSeriesBtn">Add</button>
+    </div>
+    <div id="exitTimeSeriesContainer" class="block"></div>
+  </fieldset>
+</div>
+
+<!-- Indicators (left) and Identify Entry/Exit (right, stacked) -->
+<div class="side-by-side">
+  <div class="left-col">
+    <fieldset>
+      <legend>Indicators</legend>
+      <div class="form-row">
+        <select id="indicatorSelect">
+          <option value="">-- Select --</option>
+          {% for key in indicators %}
+            <option value="{{ key }}">{{ key }}</option>
+          {% endfor %}
         </select>
-    </div>
+        <button id="addIndicatorBtn">Add</button>
+      </div>
+      <div id="indicatorsContainer" class="block"></div>
+    </fieldset>
+  </div>
 
-    <div class="form-group">
-        <label for="trade">Trade Enabled:</label>
-        <input type="checkbox" id="trade" name="trade" />
-    </div>
-
-    <div class="form-group">
-        <label for="start_time">Start Time:</label>
-        <input type="datetime-local" id="start_time" name="start_time" />
-    </div>
-
-    <div class="form-group">
-        <label for="end_time">End Time:</label>
-        <input type="datetime-local" id="end_time" name="end_time" />
-    </div>
-
-    <div class="form-group">
-        <label for="USD_holdings">USD Holdings:</label>
-        <input type="number" id="USD_holdings" name="USD_holdings" />
-    </div>
-
-    <div class="form-group">
-        <label for="coin_holdings">Coin Holdings:</label>
-        <input type="number" id="coin_holdings" name="coin_holdings" />
-    </div>
-
-    <div class="form-group">
-        <label for="maker_fee">Maker Fee:</label>
-        <input type="number" step="0.001" id="maker_fee" name="maker_fee" />
-    </div>
-
-    <div class="form-group">
-        <label for="taker_fee">Taker Fee:</label>
-        <input type="number" step="0.001" id="taker_fee" name="taker_fee" />
-    </div>
-
-    <div class="form-group">
-        <label for="main_time_series">Main Time Series:</label>
-        <select id="main_time_series" name="main_time_series">
-            <option value="1m">1m</option>
-            <option value="5m">5m</option>
-            <option value="15m">15m</option>
-            <option value="1h">1h</option>
-            <option value="1d">1d</option>
+  <div class="right-col">
+    <fieldset>
+      <legend>Identify Entry</legend>
+      <div class="form-row">
+        <select id="entrySelect">
+          <option value="">-- Select --</option>
+          {% for key in identify_entry_classes %}
+            <option value="{{ key }}">{{ key }}</option>
+          {% endfor %}
         </select>
+        <button id="addEntryBtn">Add</button>
+      </div>
+      <div id="entryContainer" class="block"></div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Identify Exit</legend>
+      <div class="form-row">
+        <select id="exitSelect">
+          <option value="">-- Select --</option>
+          {% for key in identify_exit_classes %}
+            <option value="{{ key }}">{{ key }}</option>
+          {% endfor %}
+        </select>
+        <button id="addExitBtn">Add</button>
+      </div>
+      <div id="exitContainer" class="block"></div>
+    </fieldset>
+  </div>
+</div>
+
+<!-- Entry & Exit Conditions side by side -->
+<div class="conditions-row">
+  <fieldset>
+    <legend>Entry Trade Conditions</legend>
+    <div class="form-row">
+      <select id="entryConditionSelect">
+        <option value="">-- Select --</option>
+        {% for key in entry_trade_conditions_classes %}
+          <option value="{{ key }}">{{ key }}</option>
+        {% endfor %}
+      </select>
+      <button id="addEntryConditionBtn">Add</button>
     </div>
-</fieldset>
+    <div id="entryConditionsContainer" class="block"></div>
+  </fieldset>
 
-<!-- TIME SERIES SECTION -->
-<fieldset>
-  <legend>Time Series</legend>
-  <button type="button" id="addTimeSeriesBtn">Add Time Series</button>
-  <div id="timeSeriesContainer"></div>
-</fieldset>
+  <fieldset>
+    <legend>Exit Trade Conditions</legend>
+    <div class="form-row">
+      <select id="exitConditionSelect">
+        <option value="">-- Select --</option>
+        {% for key in exit_trade_conditions_classes %}
+          <option value="{{ key }}">{{ key }}</option>
+        {% endfor %}
+      </select>
+      <button id="addExitConditionBtn">Add</button>
+    </div>
+    <div id="exitConditionsContainer" class="block"></div>
+  </fieldset>
+</div>
 
-<!-- EXIT TIME SERIES SECTION -->
-<fieldset>
-  <legend>Exit Time Series</legend>
-  <button type="button" id="addExitTimeSeriesBtn">Add Exit Time Series</button>
-  <div id="exitTimeSeriesContainer"></div>
-</fieldset>
+<!-- Strategies section -->
+<div class="strategies-grid">
+  <fieldset class="strategy-buy">
+    <legend>Buy Strategy</legend>
+    <div class="form-row">
+      <select id="buyStrategySelect">
+        <option value="">-- Select --</option>
+        {% for key in buy_strategies_classes %}
+          <option value="{{ key }}">{{ key }}</option>
+        {% endfor %}
+      </select>
+      <button id="addBuyStrategyBtn">Add</button>
+    </div>
+    <div id="buyStrategyContainer" class="block"></div>
+  </fieldset>
 
-<!-- Indicators Section -->
-<fieldset>
-<legend>Indicators</legend>
-<label for="indicatorSelect">Select Indicator:</label>
-<select id="indicatorSelect">
-  <option value="">-- Select --</option>
-  {% for key in indicators %}
-    <option value="{{ key }}">{{ key }}</option>
-  {% endfor %}
-</select>
-<button type="button" id="addIndicatorBtn">Add Indicator</button>
-<div id="indicatorsContainer"></div>
-</fieldset>
+  <fieldset class="strategy-sell">
+    <legend>Sell Strategy</legend>
+    <div class="form-row">
+      <select id="sellStrategySelect">
+        <option value="">-- Select --</option>
+        {% for key in sell_strategies_classes %}
+          <option value="{{ key }}">{{ key }}</option>
+        {% endfor %}
+      </select>
+      <button id="addSellStrategyBtn">Add</button>
+    </div>
+    <div id="sellStrategyContainer" class="block"></div>
+  </fieldset>
 
-<!-- Identify Entry Section -->
-<fieldset>
-<legend>Identify Entry</legend>
-<label for="entrySelect">Select Entry Type:</label>
-<select id="entrySelect">
-  <option value="">-- Select --</option>
-  {% for key in identify_entry_classes %}
-    <option value="{{ key }}">{{ key }}</option>
-  {% endfor %}
-</select>
-<button type="button" id="addEntryBtn">Add Entry</button>
-<div id="entryContainer"></div>
-</fieldset>
+  <fieldset class="strategy-exit">
+    <legend>Exit Strategy</legend>
+    <div class="form-row">
+      <select id="exitStrategySelect">
+        <option value="">-- Select --</option>
+        {% for key in exit_strategies_classes %}
+          <option value="{{ key }}">{{ key }}</option>
+        {% endfor %}
+      </select>
+      <button id="addExitStrategyBtn">Add</button>
+    </div>
+    <div id="exitStrategyContainer" class="block"></div>
+  </fieldset>
+</div>
 
-<!-- Identify Exit Section -->
-<fieldset>
-<legend>Identify Exit</legend>
-<label for="exitSelect">Select Exit Type:</label>
-<select id="exitSelect">
-  <option value="">-- Select --</option>
-  {% for key in identify_exit_classes %}
-    <option value="{{ key }}">{{ key }}</option>
-  {% endfor %}
-</select>
-<button type="button" id="addExitBtn">Add Exit</button>
-<div id="exitContainer"></div>
-</fieldset>
-
-<!-- Entry Trade Conditions Section -->
-<fieldset>
-<legend>Entry Trade Conditions</legend>
-<label for="entryConditionSelect">Select Entry Trade Condition:</label>
-<select id="entryConditionSelect">
-  <option value="">-- Select --</option>
-  {% for key in entry_trade_conditions_classes %}
-    <option value="{{ key }}">{{ key }}</option>
-  {% endfor %}
-</select>
-<button type="button" id="addEntryConditionBtn">Add Condition</button>
-<div id="entryConditionsContainer"></div>
-</fieldset>
-
-<!-- Exit Trade Conditions Section -->
-<fieldset>
-<legend>Exit Trade Conditions</legend>
-<label for="exitConditionSelect">Select Exit Trade Condition:</label>
-<select id="exitConditionSelect">
-  <option value="">-- Select --</option>
-  {% for key in exit_trade_conditions_classes %}
-    <option value="{{ key }}">{{ key }}</option>
-  {% endfor %}
-</select>
-<button type="button" id="addExitConditionBtn">Add Condition</button>
-<div id="exitConditionsContainer"></div>
-</fieldset>
-
-<!-- BUY STRATEGY SECTION -->
-<fieldset>
-  <legend>Buy Strategy</legend>
-  <label for="buyStrategySelect">Select Buy Strategy:</label>
-  <select id="buyStrategySelect">
-    <option value="">-- Select --</option>
-    {% for key in buy_strategies_classes %}
-      <option value="{{ key }}">{{ key }}</option>
-    {% endfor %}
-  </select>
-  <button type="button" id="addBuyStrategyBtn">Add Buy Strategy</button>
-  <div id="buyStrategyContainer"></div>
-</fieldset>
-
-<!-- SELL STRATEGY SECTION -->
-<fieldset>
-  <legend>Sell Strategy</legend>
-  <label for="sellStrategySelect">Select Sell Strategy:</label>
-  <select id="sellStrategySelect">
-    <option value="">-- Select --</option>
-    {% for key in sell_strategies_classes %}
-      <option value="{{ key }}">{{ key }}</option>
-    {% endfor %}
-  </select>
-  <button type="button" id="addSellStrategyBtn">Add Sell Strategy</button>
-  <div id="sellStrategyContainer"></div>
-</fieldset>
-
-<!-- EXIT STRATEGY SECTION -->
-<fieldset>
-  <legend>Exit Strategy</legend>
-  <label for="exitStrategySelect">Select Exit Strategy:</label>
-  <select id="exitStrategySelect">
-    <option value="">-- Select --</option>
-    {% for key in exit_strategies_classes %}
-      <option value="{{ key }}">{{ key }}</option>
-    {% endfor %}
-  </select>
-  <button type="button" id="addExitStrategyBtn">Add Exit Strategy</button>
-  <div id="exitStrategyContainer"></div>
-</fieldset>
-
-
-<!-- Submit Button -->
 <button type="button" id="submitBtn">Submit to Flask</button>
+
 
 <script>
 // ==== Globals from Flask ====
