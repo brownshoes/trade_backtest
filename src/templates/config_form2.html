@@ -19,6 +19,69 @@ select[multiple] { width: 200px; }
 <label>Upload JSON File:</label>
 <input type="file" id="jsonFileInput" accept=".json"><br><br>
 
+<fieldset id="generalConfig" class="config-fieldset">
+    <legend>General Configuration</legend>
+
+    <div class="form-group">
+        <label for="name">Config Name:</label>
+        <input type="text" id="name" name="name" />
+    </div>
+
+    <div class="form-group">
+        <label for="mode">Mode:</label>
+        <select id="mode" name="mode">
+            <option value="BACKTEST">BACKTEST</option>
+            <option value="LIVE">LIVE</option>
+        </select>
+    </div>
+
+    <div class="form-group">
+        <label for="trade">Trade Enabled:</label>
+        <input type="checkbox" id="trade" name="trade" />
+    </div>
+
+    <div class="form-group">
+        <label for="start_time">Start Time:</label>
+        <input type="datetime-local" id="start_time" name="start_time" />
+    </div>
+
+    <div class="form-group">
+        <label for="end_time">End Time:</label>
+        <input type="datetime-local" id="end_time" name="end_time" />
+    </div>
+
+    <div class="form-group">
+        <label for="USD_holdings">USD Holdings:</label>
+        <input type="number" id="USD_holdings" name="USD_holdings" />
+    </div>
+
+    <div class="form-group">
+        <label for="coin_holdings">Coin Holdings:</label>
+        <input type="number" id="coin_holdings" name="coin_holdings" />
+    </div>
+
+    <div class="form-group">
+        <label for="maker_fee">Maker Fee:</label>
+        <input type="number" step="0.001" id="maker_fee" name="maker_fee" />
+    </div>
+
+    <div class="form-group">
+        <label for="taker_fee">Taker Fee:</label>
+        <input type="number" step="0.001" id="taker_fee" name="taker_fee" />
+    </div>
+
+    <div class="form-group">
+        <label for="main_time_series">Main Time Series:</label>
+        <select id="main_time_series" name="main_time_series">
+            <option value="1m">1m</option>
+            <option value="5m">5m</option>
+            <option value="15m">15m</option>
+            <option value="1h">1h</option>
+            <option value="1d">1d</option>
+        </select>
+    </div>
+</fieldset>
+
 <!-- TIME SERIES SECTION -->
 <fieldset>
   <legend>Time Series</legend>
@@ -564,6 +627,33 @@ jsonInput.addEventListener('change', e => {
 // ==== Load JSON with error diagnostics ====
 function loadFromJSON(data) {
     try {
+        try {
+            // --- Automatically populate all single-value fields ---
+            document.querySelectorAll('input, select, textarea').forEach(el => {
+                const key = el.name; // JSON key should match input name
+                if (!key || !(key in data)) return; // skip if no match
+
+                const value = data[key];
+
+                try {
+                    if (el.type === 'checkbox') {
+                        el.checked = !!value;
+                    } else if (el.type === 'number') {
+                        el.value = parseFloat(value) || 0;
+                    } else if (el.type === 'datetime-local') {
+                        // Convert from "YYYY-MM-DD HH:MM" to "YYYY-MM-DDTHH:MM"
+                        el.value = value.replace(' ', 'T');
+                    } else {
+                        el.value = value;
+                    }
+                } catch (err) {
+                    console.error(`Failed to populate field "${key}":`, err);
+                }
+            });
+        } catch (e) {
+            console.error('Failed to load single-value fields from JSON:', e);
+        }
+
         // Time series
         if (data.time_series) {
             data.time_series.forEach(ts => {
@@ -697,20 +787,41 @@ function getStrategy(containerId) {
 }
 
 function collectData() {
-    return {
-        time_series: getTimeSeries('timeSeriesContainer'),
-        exit_time_series: getTimeSeries('exitTimeSeriesContainer'),
-        indicators: indicatorsList.map(ind => ({
-            ref: ind.ref,
-            type: ind.type,
-            args: ind.args.map(i => i.value)
-        })),
-        identify_entry: getEntries(),
-        identify_exit: getExits(),
-        buy_strategy: getStrategy('buyStrategyContainer'),
-        sell_strategy: getStrategy('sellStrategyContainer'),
-        exit_strategy: getStrategy('exitStrategyContainer')
-    };
+    const data = {};
+
+    // --- Collect all single-value fields dynamically first ---
+    document.querySelectorAll('input, select, textarea').forEach(el => {
+        const key = el.name;
+        if (!key) return;
+
+        try {
+            let value;
+            if (el.type === 'checkbox') value = el.checked;
+            else if (el.type === 'number') value = parseFloat(el.value) || 0;
+            else if (el.type === 'datetime-local') value = el.value.replace('T', ' ');
+            else value = el.value;
+
+            data[key] = value;
+        } catch (err) {
+            console.error(`Failed to collect value from field "${key}":`, err);
+        }
+    });
+
+    // --- Now add structured arrays and strategy objects ---
+    data.time_series = getTimeSeries('timeSeriesContainer');
+    data.exit_time_series = getTimeSeries('exitTimeSeriesContainer');
+    data.indicators = indicatorsList.map(ind => ({
+        ref: ind.ref,
+        type: ind.type,
+        args: ind.args.map(i => i.value)
+    }));
+    data.identify_entry = getEntries();
+    data.identify_exit = getExits();
+    data.buy_strategy = getStrategy('buyStrategyContainer');
+    data.sell_strategy = getStrategy('sellStrategyContainer');
+    data.exit_strategy = getStrategy('exitStrategyContainer');
+
+    return data;
 }
 
 // ==== Submit ====
