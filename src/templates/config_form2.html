@@ -5,42 +5,66 @@
 <title>Trading Config Editor</title>
 <style>
 body {
-  font-family: Arial, sans-serif;
-  margin: 20px;
-  background: #f9f9f9;
+  font-family: "Segoe UI", Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+  background: #dfe3e8;
+  color: #222;
 }
 h1 {
-  margin-bottom: 20px;
+  margin: 0;
+  padding: 20px;
+  background: #2b3a4a;
+  color: #fff;
+  text-align: center;
+  font-weight: 500;
+  letter-spacing: 0.5px;
 }
+
+/* Alternating background bands */
+.section-row {
+  padding: 25px 30px;
+}
+.section-row:nth-child(odd) {
+  background-color: #f0f3f8;
+}
+.section-row:nth-child(even) {
+  background-color: #e6ebf2;
+}
+
+/* Fieldsets */
 fieldset {
-  border: 1px solid #ccc;
-  border-radius: 5px;
-  margin-bottom: 15px;
-  padding: 10px;
+  border: 1px solid #bbb;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  padding: 15px;
   background: #fff;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
 }
 legend {
   font-weight: bold;
+  color: #ffffff;
+  background: #3b5b8a;
+  padding: 6px 14px;
+  border-radius: 6px;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
 }
-.form-row {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-.form-group {
-  flex: 1;
-  min-width: 150px;
-  display: flex;
-  flex-direction: column;
-  margin-bottom: 8px;
-}
+/* Inputs and Buttons */
 input, select, button {
-  padding: 5px;
+  padding: 7px;
   font-size: 0.9em;
+  border-radius: 5px;
+  border: 1px solid #bbb;
 }
 button {
   cursor: pointer;
-  margin-top: auto;
+  background: #44576d;
+  color: #fff;
+  border: none;
+  transition: 0.2s;
+}
+button:hover {
+  background: #2f3f50;
 }
 .block {
   border: 1px solid #ddd;
@@ -49,26 +73,113 @@ button {
   border-radius: 5px;
   background: #fafafa;
 }
-.section-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 5px;
-}
 
 /* Layout helpers */
-.dual-section, .conditions-row, .strategies-row {
+.form-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  min-width: 120px;
+}
+/* Unique classes for 25% left-aligned fields */
+.compact-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-start; /* keep items left-aligned */
+  margin-bottom: 10px;
+}
+
+.compact-field {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 25%;   /* base width 25% */
+  max-width: 25%;  /* restrict max width */
+  min-width: 180px; /* prevents shrinking too much */
+}
+/* Label styling for compact fields */
+.compact-field label {
+  font-weight: 600;         /* make label slightly bold */
+  font-size: 0.95em;        /* slightly smaller font size */
+  color: #333;              /* dark gray text */
+  margin-bottom: 5px;       /* space between label and input */
+  letter-spacing: 0.2px;    /* subtle letter spacing */
+}
+
+/* Optional: focus highlight for input fields */
+.compact-field input,
+.compact-field select {
+  padding: 6px 8px;
+  border-radius: 5px;
+  border: 1px solid #bbb;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.compact-field input:focus,
+.compact-field select:focus {
+  border-color: #3b5b8a;
+  box-shadow: 0 0 4px rgba(59, 91, 138, 0.3);
+  outline: none;
+}
+
+/* Styling for top row fields: Config Name, Mode, Trade Enabled */
+.top-field label {
+  font-weight: 600;        /* slightly bold */
+  font-size: 0.95em;       /* slightly smaller font */
+  color: #333;             /* dark gray */
+  margin-bottom: 5px;      /* spacing below label */
+  letter-spacing: 0.2px;   /* subtle letter spacing */
+}
+
+/* Inputs and selects */
+.top-field input,
+.top-field select {
+  padding: 6px 8px;
+  border-radius: 5px;
+  border: 1px solid #bbb;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.top-field input:focus,
+.top-field select:focus {
+  border-color: #3b5b8a;
+  box-shadow: 0 0 4px rgba(59, 91, 138, 0.3);
+  outline: none;
+}
+
+/* Checkbox alignment */
+.top-field input[type="checkbox"] {
+  width: auto;
+  margin-top: 6px; /* align visually with label */
+}
+
+
+
+/* Responsive: full width on small screens */
+@media (max-width: 900px) {
+  .compact-field {
+    flex: 1 1 100%;
+    max-width: 100%;
+  }
+}
+
+.dual-section, .conditions-row {
   display: flex;
   gap: 20px;
   flex-wrap: wrap;
 }
-.dual-section fieldset, .conditions-row fieldset, .strategies-row > div {
+.dual-section fieldset, .conditions-row fieldset {
   flex: 1;
   min-width: 300px;
 }
 .side-by-side {
   display: flex;
-  gap: 20px;
+  gap: 25px;
   flex-wrap: wrap;
 }
 .left-col, .right-col {
@@ -79,19 +190,35 @@ button {
   gap: 15px;
 }
 
-/* Strategy section layout */
+/* Strategies */
 .strategies-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   grid-template-areas:
     "buy sell"
     "exit .";
-  gap: 20px;
+  gap: 25px;
 }
 .strategy-buy { grid-area: buy; }
 .strategy-sell { grid-area: sell; }
 .strategy-exit { grid-area: exit; }
 
+/* Submit */
+#submitBtn {
+  padding: 12px 25px;
+  font-weight: bold;
+  font-size: 1em;
+  background: #2b3a4a;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  transition: 0.2s;
+}
+#submitBtn:hover {
+  background: #1e2833;
+}
+
+/* Responsive */
 @media (max-width: 900px) {
   .strategies-grid {
     grid-template-columns: 1fr;
@@ -107,92 +234,113 @@ button {
 
 <h1>Trading Config Editor</h1>
 
-<label>Upload JSON File:</label>
-<input type="file" id="jsonFileInput" accept=".json">
+<!-- === Load JSON === -->
+<div class="section-row" style="text-align:center;">
+  <label for="jsonFileInput" style="font-weight:bold; margin-right:10px;">Upload JSON File:</label>
+  <input type="file" id="jsonFileInput" accept=".json">
+</div>
 
-<!-- General Configuration -->
-<fieldset>
-  <legend>General Configuration</legend>
-  <div class="form-row">
-    <div class="form-group">
-      <label>Config Name</label>
-      <input type="text" id="name">
+<!-- === General Config === -->
+<div class="section-row">
+  <fieldset id="generalConfig" class="config-fieldset">
+    <legend>General Configuration</legend>
+
+    <div class="form-row row-bg-1">
+    <div class="form-group top-field" style="flex: 1 1 30%;">
+        <label for="name">Config Name:</label>
+        <input type="text" id="name" name="name">
     </div>
-    <div class="form-group">
-      <label>Mode</label>
-      <select id="mode">
+
+    <div class="form-group top-field" style="flex: 1 1 20%;">
+        <label for="mode">Mode:</label>
+        <select id="mode" name="mode">
         <option value="BACKTEST">BACKTEST</option>
         <option value="LIVE">LIVE</option>
-      </select>
+        </select>
     </div>
-    <div class="form-group">
-      <label>Trade Enabled</label>
-      <input type="checkbox" id="trade">
+
+    <div class="form-group top-field" style="flex: 1 1 20%;">
+        <label for="trade">Trade Enabled:</label>
+        <input type="checkbox" id="trade" name="trade">
     </div>
-  </div>
-  <div class="form-row">
-    <div class="form-group">
-      <label>Start Time</label>
-      <input type="datetime-local" id="start_time">
     </div>
-    <div class="form-group">
-      <label>End Time</label>
-      <input type="datetime-local" id="end_time">
+
+
+    <!-- Start and End Time -->
+    <div class="compact-row">
+    <div class="compact-field">
+        <label for="start_time">Start Time:</label>
+        <input type="datetime-local" id="start_time" name="start_time">
     </div>
-    <div class="form-group">
-      <label>Main Time Series</label>
-      <select id="main_time_series">
+
+    <div class="compact-field">
+        <label for="end_time">End Time:</label>
+        <input type="datetime-local" id="end_time" name="end_time">
+    </div>
+    </div>
+
+    <!-- USD and Coin Holdings -->
+    <div class="compact-row">
+    <div class="compact-field">
+        <label for="USD_holdings">USD Holdings:</label>
+        <input type="number" id="USD_holdings" name="USD_holdings">
+    </div>
+
+    <div class="compact-field">
+        <label for="coin_holdings">Coin Holdings:</label>
+        <input type="number" id="coin_holdings" name="coin_holdings">
+    </div>
+    </div>
+
+    <!-- Maker and Taker Fee -->
+    <div class="compact-row">
+    <div class="compact-field">
+        <label for="maker_fee">Maker Fee:</label>
+        <input type="number" step="0.001" id="maker_fee" name="maker_fee">
+    </div>
+
+    <div class="compact-field">
+        <label for="taker_fee">Taker Fee:</label>
+        <input type="number" step="0.001" id="taker_fee" name="taker_fee">
+    </div>
+    </div>
+
+    <!-- Main Time Series -->
+    <div class="compact-row">
+    <div class="compact-field">
+        <label for="main_time_series">Main Time Series:</label>
+        <select id="main_time_series" name="main_time_series">
         <option value="1m">1m</option>
         <option value="5m">5m</option>
         <option value="15m">15m</option>
         <option value="1h">1h</option>
         <option value="1d">1d</option>
-      </select>
+        </select>
     </div>
-  </div>
-  <div class="form-row">
-    <div class="form-group">
-      <label>USD Holdings</label>
-      <input type="number" id="USD_holdings">
     </div>
-    <div class="form-group">
-      <label>Coin Holdings</label>
-      <input type="number" id="coin_holdings">
-    </div>
-    <div class="form-group">
-      <label>Maker Fee</label>
-      <input type="number" step="0.001" id="maker_fee">
-    </div>
-    <div class="form-group">
-      <label>Taker Fee</label>
-      <input type="number" step="0.001" id="taker_fee">
-    </div>
-  </div>
-</fieldset>
 
-<!-- Time Series + Exit Time Series -->
-<div class="dual-section">
+  </fieldset>
+</div>
+
+
+
+<!-- === Time Series Row === -->
+<div class="section-row dual-section">
   <fieldset>
     <legend>Time Series</legend>
-    <div class="section-header">
-      <span>Time Series</span>
-      <button id="addTimeSeriesBtn">Add</button>
-    </div>
+    <button id="addTimeSeriesBtn">Add</button>
     <div id="timeSeriesContainer" class="block"></div>
   </fieldset>
 
   <fieldset>
     <legend>Exit Time Series</legend>
-    <div class="section-header">
-      <span>Exit Time Series</span>
-      <button id="addExitTimeSeriesBtn">Add</button>
-    </div>
+    <button id="addExitTimeSeriesBtn">Add</button>
     <div id="exitTimeSeriesContainer" class="block"></div>
   </fieldset>
 </div>
 
-<!-- Indicators (left) and Identify Entry/Exit (right, stacked) -->
-<div class="side-by-side">
+<!-- === Indicators + Identify === -->
+<div class="section-row side-by-side">
   <div class="left-col">
     <fieldset>
       <legend>Indicators</legend>
@@ -240,8 +388,8 @@ button {
   </div>
 </div>
 
-<!-- Entry & Exit Conditions side by side -->
-<div class="conditions-row">
+<!-- === Entry/Exit Conditions === -->
+<div class="section-row conditions-row">
   <fieldset>
     <legend>Entry Trade Conditions</legend>
     <div class="form-row">
@@ -271,52 +419,60 @@ button {
   </fieldset>
 </div>
 
-<!-- Strategies section -->
-<div class="strategies-grid">
-  <fieldset class="strategy-buy">
-    <legend>Buy Strategy</legend>
-    <div class="form-row">
-      <select id="buyStrategySelect">
-        <option value="">-- Select --</option>
-        {% for key in buy_strategies_classes %}
-          <option value="{{ key }}">{{ key }}</option>
-        {% endfor %}
-      </select>
-      <button id="addBuyStrategyBtn">Add</button>
-    </div>
-    <div id="buyStrategyContainer" class="block"></div>
-  </fieldset>
+<!-- === Strategies === -->
+<div class="section-row">
+  <div class="strategies-grid">
+    <fieldset class="strategy-buy">
+      <legend>Buy Strategy</legend>
+      <div class="form-row">
+        <select id="buyStrategySelect">
+          <option value="">-- Select --</option>
+          {% for key in buy_strategies_classes %}
+            <option value="{{ key }}">{{ key }}</option>
+          {% endfor %}
+        </select>
+        <button id="addBuyStrategyBtn">Add</button>
+      </div>
+      <div id="buyStrategyContainer" class="block"></div>
+    </fieldset>
 
-  <fieldset class="strategy-sell">
-    <legend>Sell Strategy</legend>
-    <div class="form-row">
-      <select id="sellStrategySelect">
-        <option value="">-- Select --</option>
-        {% for key in sell_strategies_classes %}
-          <option value="{{ key }}">{{ key }}</option>
-        {% endfor %}
-      </select>
-      <button id="addSellStrategyBtn">Add</button>
-    </div>
-    <div id="sellStrategyContainer" class="block"></div>
-  </fieldset>
+    <fieldset class="strategy-sell">
+      <legend>Sell Strategy</legend>
+      <div class="form-row">
+        <select id="sellStrategySelect">
+          <option value="">-- Select --</option>
+          {% for key in sell_strategies_classes %}
+            <option value="{{ key }}">{{ key }}</option>
+          {% endfor %}
+        </select>
+        <button id="addSellStrategyBtn">Add</button>
+      </div>
+      <div id="sellStrategyContainer" class="block"></div>
+    </fieldset>
 
-  <fieldset class="strategy-exit">
-    <legend>Exit Strategy</legend>
-    <div class="form-row">
-      <select id="exitStrategySelect">
-        <option value="">-- Select --</option>
-        {% for key in exit_strategies_classes %}
-          <option value="{{ key }}">{{ key }}</option>
-        {% endfor %}
-      </select>
-      <button id="addExitStrategyBtn">Add</button>
-    </div>
-    <div id="exitStrategyContainer" class="block"></div>
-  </fieldset>
+    <fieldset class="strategy-exit">
+      <legend>Exit Strategy</legend>
+      <div class="form-row">
+        <select id="exitStrategySelect">
+          <option value="">-- Select --</option>
+          {% for key in exit_strategies_classes %}
+            <option value="{{ key }}">{{ key }}</option>
+          {% endfor %}
+        </select>
+        <button id="addExitStrategyBtn">Add</button>
+      </div>
+      <div id="exitStrategyContainer" class="block"></div>
+    </fieldset>
+  </div>
 </div>
 
-<button type="button" id="submitBtn">Submit to Flask</button>
+<!-- === Submit === -->
+<div class="section-row" style="text-align:center;">
+  <button type="button" id="submitBtn">Submit to Flask</button>
+</div>
+
+</body>
+</html>
 
 
 <script>
