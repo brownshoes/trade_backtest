@@ -132,11 +132,6 @@ def serialize_obj(obj, indicator_map=None):
         if indicator_map and obj in indicator_map:
             block["ref"] = indicator_map[obj]
         return block
-        # return {
-        #     "type": cls_name,
-        #     "args": args
-        # }
-
     # Fallback
     return {"type": cls_name}
 
@@ -177,22 +172,6 @@ def config_to_json(config):
 
         "csv_input_file": config.csv_input_file
     }
-
-
-
-# def deserialize_obj2(obj_def, indicators=None):
-#     if obj_def is None:
-#         return None
-
-#     cls = CLASS_MAP[obj_def["type"]]
-
-#     if "indicator_ref_index" in obj_def:
-#         return cls(indicators[obj_def["indicator_ref_index"]])
-
-#     if "args" in obj_def:
-#         return cls(*obj_def["args"])
-
-#     return cls()
 
 
 def deserialize_obj(obj_def, indicator_ref_map=None):
