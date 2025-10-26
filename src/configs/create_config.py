@@ -181,8 +181,13 @@ def deserialize_obj(obj_def, indicator_ref_map=None):
     cls = CLASS_MAP[obj_def["type"]]
 
     if indicator_ref_map is not None and "indicator_ref" in obj_def:
-        resolved_objects = [indicator_ref_map[idx] for idx in obj_def["indicator_ref"]]
-        return cls(*resolved_objects)
+        try:
+            resolved_objects = [indicator_ref_map[idx] for idx in obj_def["indicator_ref"]]
+            return cls(*resolved_objects)
+        except KeyError as e:
+            print(f"[DEBUG] Missing indicator reference: {e.args[0]} in {obj_def}")
+        except Exception as e:
+            print(f"[DEBUG] Error resolving indicator references in {obj_def}: {e}")
 
     if "args" in obj_def:
         return cls(*obj_def["args"])

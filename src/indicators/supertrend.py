@@ -7,7 +7,7 @@ class Supertrend:
     def __init__(self, time_series, atr_length=10, multiplier=3.0):
         self.time_series = time_series
         self.atr_length = atr_length
-        self.multiplier = multiplier
+        self.multiplier = float(multiplier) # the key below requires this to be a float
 
         self.supertrend_main = Series("Supertrend", self.time_series)
         self.supertrend_direction = Series("Supertrend direction" , self.time_series)
@@ -17,7 +17,6 @@ class Supertrend:
     def populate(self):
         df = self.time_series.df
         pandas_supertrend = ta.supertrend(df["High"], df["Low"], df["Close"], length=self.atr_length, multiplier=self.multiplier)
-
         key = f"_{self.atr_length}_{self.multiplier}"
 
         self.supertrend_main.populate(pd.Series(pandas_supertrend["SUPERT" + key]))

@@ -319,6 +319,13 @@ button:hover {
     </div>
     </div>
 
+    <div class="compact-row">
+      <div class="compact-field" style="flex: 1 1 100%;">
+        <label for="csv_input_file">CSV Input File:</label>
+        <input type="text" id="csv_input_file" name="csv_input_file" placeholder="path/to/file.csv">
+      </div>
+    </div>
+
   </fieldset>
 </div>
 
@@ -1030,14 +1037,16 @@ function getTimeSeries(containerId) {
 function getEntries() {
     return Array.from(document.querySelectorAll('#entryContainer .block')).map(block => ({
         type: block.querySelector('h3').textContent,
-        indicator_ref: Array.from(block.querySelector('select').selectedOptions).map(o => o.value)
+        indicator_ref: Array.from(block.querySelector('select').selectedOptions)
+            .map(o => Number(o.value)) // Convert to integers
     }));
 }
 
 function getExits() {
     return Array.from(document.querySelectorAll('#exitContainer .block')).map(block => ({
         type: block.querySelector('h3').textContent,
-        indicator_ref: Array.from(block.querySelector('select').selectedOptions).map(o => o.value)
+        indicator_ref: Array.from(block.querySelector('select').selectedOptions)
+            .map(o => Number(o.value)) // Convert to integers
     }));
 }
 
@@ -1045,7 +1054,7 @@ function getStrategy(containerId) {
     const block = document.querySelector(`#${containerId} .block`);
     if (!block) return null;
     const type = block.querySelector('h3').textContent;
-    const args = Array.from(block.querySelectorAll('input')).map(i => i.value);
+    const args = Array.from(block.querySelectorAll('input')).map(i => parseTypedValue(i.value));
     return { type, args };
 }
 
@@ -1076,7 +1085,7 @@ function collectData() {
     data.indicators = indicatorsList.map(ind => ({
         ref: ind.ref,
         type: ind.type,
-        args: ind.args.map(i => i.value)
+        args: ind.args.map(i => parseTypedValue(i.value))
     }));
     data.identify_entry = getEntries();
     data.identify_exit = getExits();
@@ -1086,6 +1095,25 @@ function collectData() {
 
     return data;
 }
+
+function parseTypedValue(value) {
+    // If it's already a number, return as-is
+    if (typeof value === 'number') return value;
+
+    // Handle null/undefined explicitly
+    if (value === null || value === undefined) return value;
+
+    // If empty string, return as-is (don’t convert to 0)
+    if (value === '') return value;
+
+    // Try to detect and convert numeric types
+    if (/^-?\d+$/.test(value)) return parseInt(value, 10);     // Integer
+    if (/^-?\d*\.\d+$/.test(value)) return parseFloat(value);  // Float
+
+    // Everything else stays a string
+    return value;
+}
+
 
 // ==== Submit ====
 document.getElementById('submitBtn').addEventListener('click', async () => {
