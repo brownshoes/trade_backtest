@@ -8,7 +8,7 @@ from init.initalization import backtest_init
 from configs.create_config import create_config_from_json
 
 from log.logger import setup_logger
-log = setup_logger("Flask", mode="off")
+log = setup_logger("Flask", mode="on")
 
 app = Flask(__name__)
 
