@@ -12,6 +12,22 @@ app = Flask(__name__)
 
 #config_data = DEFAULT_CONFIG.to_json()
 
+@app.route("/save-config", methods=["POST"])
+def save_config():
+    data = request.get_json()
+    if not data:
+        return jsonify({"status": "error", "message": "No JSON received"}), 400
+
+    # Save to file
+    with open('config.json', "w") as f:
+        json.dump(data, f, indent=4)
+
+    # Print to console
+    print("Received config JSON:")
+    print(json.dumps(data, indent=4))
+
+    return jsonify({"status": "success", "message": "Config saved!"})
+
 
 @app.route('/', methods=['GET', 'POST'])
 def config():
@@ -47,77 +63,17 @@ def config():
         config_data['identify_entry'] = parse_identify_rules(request.form, "identify_entry")
         config_data['identify_exit'] = parse_identify_rules(request.form, "identify_exit")
 
+         # --- Trade conditions ---
+        config_data['entry_trade_conditions'] = parse_trade_conditions(request.form, 'entry-trade-condition')
+        config_data['exit_trade_conditions'] = parse_trade_conditions(request.form, 'exit-trade-condition')
+
+        # --- Strategies ---
+        config_data['buy_strategy'] = parse_strategy(request.form, 'buy-strategy')
+        config_data['sell_strategy'] = parse_strategy(request.form, 'sell-strategy')
+        config_data['exit_strategy'] = parse_strategy(request.form, 'exit-strategy')
 
 
-        # # Handle indicators
-        # indicators = []
-        # num_indicators = int(request.form['num_indicators'])
-        # for i in range(num_indicators):
-        #     type_ = request.form[f'indicator_type_{i}']
-        #     args_raw = request.form.getlist(f'indicator_args_{i}')
-        #     args = [int(arg) if arg.isdigit() else arg for arg in args_raw]
-        #     indicators.append({"type": type_, "args": args})
-        # config_data['indicators'] = indicators
 
-        # Handle identify_entry
-        # identify_entry = []
-        # num_entry_rules = int(request.form.get('num_entry_rules', 0))
-        # for i in range(num_entry_rules):
-        #     rule_type = request.form.get(f'entry_type_{i}')
-        #     indicator_idx = int(request.form.get(f'entry_indicator_index_{i}', 0))
-        #     identify_entry.append({"type": rule_type, "indicator_ref_index": indicator_idx})
-        # config_data['identify_entry'] = identify_entry
-
-        # # Handle identify_exit
-        # identify_exit = []
-        # num_exit_rules = int(request.form.get('num_exit_rules', 0))
-        # for i in range(num_exit_rules):
-        #     rule_type = request.form.get(f'exit_type_{i}')
-        #     indicator_idx = int(request.form.get(f'exit_indicator_index_{i}', 0))
-        #     identify_exit.append({"type": rule_type, "indicator_ref_index": indicator_idx})
-        # config_data['identify_exit'] = identify_exit
-
-        # Handle entry_trade_conditions
-        entry_trade_conditions = []
-        num_entry_conditions = int(request.form.get('num_entry_conditions', 0))
-        for i in range(num_entry_conditions):
-            cond_type = request.form.get(f'entry_trade_condition_type_{i}')
-            if cond_type:
-                entry_trade_conditions.append({"type": cond_type})
-        config_data['entry_trade_conditions'] = entry_trade_conditions
-
-        # Handle exit_trade_conditions
-        exit_trade_conditions = []
-        num_exit_conditions = int(request.form.get('num_exit_conditions', 0))
-        for i in range(num_exit_conditions):
-            cond_type = request.form.get(f'exit_trade_condition_type_{i}')
-            if cond_type:
-                exit_trade_conditions.append({"type": cond_type})
-        config_data['exit_trade_conditions'] = exit_trade_conditions
-
-        # Buy Strategy
-        buy_strategy_type = request.form.get('buy_strategy_type_0')
-        buy_strategy_args = {
-            k.replace(f'buy_strategy_arg_0_', ''): request.form[k]
-            for k in request.form if k.startswith('buy_strategy_arg_0_')
-        }
-        config_data['buy_strategy'] = {'type': buy_strategy_type, **buy_strategy_args}
-
-        # Sell Strategy
-        sell_strategy_type = request.form.get('sell_strategy_type_0')
-        sell_strategy_args = {
-            k.replace(f'sell_strategy_arg_0_', ''): request.form[k]
-            for k in request.form if k.startswith('sell_strategy_arg_0_')
-        }
-        config_data['sell_strategy'] = {'type': sell_strategy_type, **sell_strategy_args}
-
-        # Exit Strategy
-        exit_strategy_type = request.form.get('exit_strategy_type_0')
-        exit_strategy_args = {
-            k.replace(f'exit_strategy_arg_0_', ''): request.form[k]
-            for k in request.form if k.startswith('exit_strategy_arg_0_')
-        }
-        config_data['exit_strategy'] = {'type': exit_strategy_type, **exit_strategy_args}
 
 
         
@@ -141,39 +97,42 @@ def config():
         exit_strategy_classes=EXIT_STRATEGIES_CLASSES
     )
 
-# def parse_indicators(form_data):
-#     """
-#     Parse indicators from submitted form data.
 
-#     Expected keys:
-#       - num_indicators
-#       - indicator_type_0, indicator_type_1, ...
-#       - indicator_arg_0_<argname>, indicator_arg_1_<argname>, ...
-#     """
-#     indicators = []
-#     num_indicators = int(form_data.get('num_indicators', 0))
+# ==================== Trade Conditions ====================
+def parse_trade_conditions(form_data, prefix):
+    conditions = []
+    num_items = int(form_data.get(f'num_{prefix}s', 0))
 
-#     for i in range(num_indicators):
-#         ind_type = form_data.get(f'indicator_type_{i}')
-#         if not ind_type:
-#             continue
+    for i in range(num_items):
+        condition_type = form_data.get(f'{prefix}_type_{i}')
+        args = {}
+        for key, value in form_data.items():
+            if key.startswith(f'{prefix}_arg_{i}_'):
+                arg_name = key.replace(f'{prefix}_arg_{i}_', '')
+                args[arg_name] = float(value) if value.replace('.', '', 1).isdigit() else value
 
-#         # Collect all args for this indicator
-#         args = []
-#         for key, value in form_data.items():
-#             if key.startswith(f'indicator_arg_{i}_') and value:
-#                 # Convert numeric args to int if possible
-#                 if value.isdigit():
-#                     args.append(int(value))
-#                 else:
-#                     args.append(value)
+        if condition_type:
+            conditions.append({
+                "type": condition_type,
+                "args": args
+            })
+    return conditions
 
-#         indicators.append({
-#             "type": ind_type,
-#             "args": args
-#         })
+# ==================== Strategies ====================
+def parse_strategy(form_data, prefix):
+    # Only parse if the strategy exists
+    if not form_data.get(f'has_{prefix}', '0') == '1':
+        return None
 
-#     return indicators
+    strategy_type = form_data.get(f'{prefix}_type_0')
+    args = {}
+    for key, value in form_data.items():
+        if key.startswith(f'{prefix}_arg_0_'):
+            arg_name = key.replace(f'{prefix}_arg_0_', '')
+            args[arg_name] = float(value) if value.replace('.', '', 1).isdigit() else value
+
+    return {"type": strategy_type, "args": args}
+
 
 def parse_indicators(form_data):
     indicators = []

@@ -5,7 +5,8 @@
 </head>
 <body>
     <h1>Config Editor</h1>
-    <form method="POST">
+    <form id="configForm">
+    <!-- <form method="POST"> -->
         <h2>Load JSON Config</h2>
         <input type="file" id="json-upload" accept=".json">
         <button type="button" onclick="loadJSONConfig()">Load Config</button>
@@ -116,8 +117,37 @@
 
         <br><br>
 
-        <button type="submit">Save Config</button>
+        <button type="button" onclick="submitJSON()">Save Config</button>
     </form>
+
+<script>
+function submitJSON() {
+    const form = document.getElementById('configForm');
+    const formData = new FormData(form);
+
+    const jsonObject = {};
+    formData.forEach((value, key) => {
+        const el = form.querySelector(`[name="${key}"]`);
+        if (el && el.type === "checkbox") {
+            jsonObject[key] = el.checked;
+        } else {
+            jsonObject[key] = value;
+        }
+    });
+
+    fetch("/save-config", {  // <-- send to the separate endpoint
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify(jsonObject)
+    })
+    .then(response => response.json())
+    .then(data => {
+        alert("Config saved!");
+        console.log(data);
+    })
+    .catch(error => console.error(error));
+}
+</script>
 
     <script>
         function createConfigBlock(configType, typeMap, index, prefix, showRemove = false) {

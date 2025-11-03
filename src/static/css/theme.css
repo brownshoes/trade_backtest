@@ -1,0 +1,269 @@
+/* === Theme Variables === */
+:root {
+  --bg-body: #dfe3e8;
+  --bg-section1: #f0f3f8;
+  --bg-section2: #e6ebf2;
+  --bg-card: #ffffff;
+
+  --text-main: #222;
+  --text-label: #333;
+  --text-invert: #ffffff;
+
+  --accent-main: #3b5b8a;
+  --accent-dark: #2b3a4a;
+  --accent-light: #44576d;
+
+  --border-color: #bbb;
+  --shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+
+/* === Dark Mode === */
+body.dark-mode {
+  --bg-body: #1e2329;
+  --bg-section1: #252b34;
+  --bg-section2: #2f3641;
+  --bg-card: #313843;
+
+  --text-main: #eaeaea;
+  --text-label: #ddd;
+  --text-invert: #fff;
+
+  --accent-main: #4a90e2;
+  --accent-dark: #273043;
+  --accent-light: #3b5b8a;
+
+  --border-color: #555;
+  --shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+
+/* === Base Page === */
+body {
+  font-family: "Segoe UI", Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+  background: var(--bg-body);
+  color: var(--text-main);
+  transition: background 0.3s, color 0.3s;
+}
+
+h1 {
+  margin: 0;
+  padding: 20px;
+  background: var(--accent-dark);
+  color: var(--text-invert);
+  text-align: center;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+}
+
+/* === Tab Navigation === */
+#tabs {
+  display: flex;
+  border-bottom: 2px solid var(--border-color);
+  margin-bottom: 15px;
+  list-style: none;
+  padding-left: 0;
+}
+
+#tabs li {
+  margin-right: 10px;
+}
+
+#tabs li a {
+  display: block;
+  padding: 10px 18px;
+  text-decoration: none;
+  color: var(--text-main);
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-bottom: none;
+  border-radius: 6px 6px 0 0;
+  transition: background 0.3s, color 0.3s;
+}
+
+#tabs li a.active {
+  background: var(--accent-main);
+  color: var(--text-invert);
+  font-weight: bold;
+}
+
+#tab-content {
+  padding: 20px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 0 6px 6px 6px;
+  box-shadow: var(--shadow);
+  transition: background 0.3s;
+}
+
+/* === Section Layout === */
+.section-row {
+  padding: 25px 30px;
+  background: var(--bg-section1);
+  transition: background 0.3s;
+}
+.section-row + .section-row {
+  background: var(--bg-section2);
+}
+
+/* === Fieldsets === */
+fieldset {
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  margin-bottom: 20px;
+  padding: 15px;
+  background: var(--bg-card);
+  box-shadow: var(--shadow);
+  transition: background 0.3s, border-color 0.3s;
+}
+
+legend {
+  font-weight: bold;
+  color: var(--text-invert);
+  background: var(--accent-main);
+  padding: 6px 14px;
+  border-radius: 6px;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+
+/* === Form Elements === */
+label {
+  font-weight: 600;
+  font-size: 0.95em;
+  color: var(--text-label);
+  margin-bottom: 5px;
+  letter-spacing: 0.2px;
+}
+
+input, select {
+  padding: 6px 8px;
+  border-radius: 5px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-card);
+  color: var(--text-main);
+  transition: border-color 0.2s, box-shadow 0.2s, background 0.3s, color 0.3s;
+  font-size: 0.9em;
+}
+input:focus, select:focus {
+  border-color: var(--accent-main);
+  box-shadow: 0 0 4px rgba(59, 91, 138, 0.3);
+  outline: none;
+}
+
+/* Checkbox alignment */
+input[type="checkbox"] {
+  width: auto;
+  margin-top: 6px;
+}
+
+/* === Buttons === */
+button {
+  cursor: pointer;
+  background: var(--accent-light);
+  color: var(--text-invert);
+  border: none;
+  padding: 7px 14px;
+  border-radius: 5px;
+  transition: background 0.2s, transform 0.1s;
+}
+button:hover {
+  background: var(--accent-dark);
+  transform: translateY(-1px);
+}
+
+/* Submit button */
+#submitBtn {
+  padding: 12px 25px;
+  font-weight: bold;
+  font-size: 1em;
+  background: var(--accent-dark);
+  border-radius: 6px;
+}
+#submitBtn:hover {
+  background: var(--accent-main);
+}
+
+/* === Layout Helpers === */
+.flex-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.compact-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-start;
+  margin-bottom: 10px;
+}
+
+.compact-field {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 25%;
+  max-width: 25%;
+  min-width: 180px;
+}
+
+.block {
+  border: 1px solid var(--border-color);
+  padding: 10px;
+  margin-top: 5px;
+  border-radius: 5px;
+  background: var(--bg-card);
+  transition: background 0.3s, border-color 0.3s;
+}
+
+/* === Multi-column sections === */
+.dual-section,
+.conditions-row,
+.side-by-side {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.dual-section fieldset,
+.conditions-row fieldset,
+.side-by-side fieldset {
+  flex: 1;
+  min-width: 300px;
+}
+
+/* Columns inside side-by-side layout */
+.left-col, .right-col {
+  flex: 1;
+  min-width: 300px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+/* === Strategies Grid === */
+.strategies-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-areas:
+    "buy sell"
+    "exit .";
+  gap: 25px;
+}
+.strategy-buy { grid-area: buy; }
+.strategy-sell { grid-area: sell; }
+.strategy-exit { grid-area: exit; }
+
+/* === Responsiveness === */
+@media (max-width: 900px) {
+  .compact-field {
+    flex: 1 1 100%;
+    max-width: 100%;
+  }
+  .strategies-grid {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "buy"
+      "sell"
+      "exit";
+  }
+}

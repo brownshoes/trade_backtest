@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Flask SPA Tabs</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
+</head>
+<body>
+<h1>Flask Tabs SPA</h1>
+
+<ul id="tabs">
+    <li><a class="active" data-tab="load" href="#">Load</a></li>
+    <li><a data-tab="create_edit" href="#">Create/Edit</a></li>
+    <li><a data-tab="results" href="#">Results</a></li>
+</ul>
+
+<!-- Keep all tabs in the DOM -->
+<div id="tab-content">
+    <div id="loadTab" class="tab-pane"> 
+        <!-- Load tab content -->
+        <p>Load content here...</p>
+    </div>
+
+    <div id="create_editTab" class="tab-pane" style="display:none;">
+        {% include 'create_edit.html' %}
+    </div>
+
+    <div id="resultsTab" class="tab-pane" style="display:none;">
+        <!-- Results tab content -->
+        <p>Results content here...</p>
+    </div>
+</div>
+
+<button id="darkModeBtn" style="margin:10px;">Toggle Dark Mode</button>
+
+<!-- Tabs logic -->
+<script src="{{ url_for('static', filename='js/tabs.js') }}"></script>
+
+
+<script>
+document.getElementById('darkModeBtn').addEventListener('click', () => {
+    document.body.classList.toggle('dark-mode');
+});
+</script>
+</body>
+</html>
