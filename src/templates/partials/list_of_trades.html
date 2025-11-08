@@ -1,0 +1,56 @@
+<!-- List of Trades Table -->
+<div id="list_of_tradesTab" class="tab-pane">
+    <h3 class="section-title">Closed Trades</h3>
+
+    {% if positions %}
+    <div class="table-wrapper">
+        <table class="trades-table">
+            <thead>
+                <tr>
+                    <th>Trade #</th>
+                    <th>Type</th>
+                    <th>Date/Time</th>
+                    <th>Signal</th>
+                    <th>Price</th>
+                    <th>Position Size</th>
+                    <th>Net P&amp;L</th>
+                    <th>Run-up</th>
+                    <th>Drawdown</th>
+                    <th>Cumulative P&amp;L</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for position in positions %}
+                    <tr>
+                        <td rowspan="2">
+                            <a href="#">{{ loop.revindex }} Long</a>
+                        </td>
+                        <td class="trade-type exit">Exit</td>
+                        <td>{{ position.close_datetime }}</td>
+                        <td>{{ position.exit_signal or 'TP1' }}</td>
+                        <td>{{ position.close_market_price }} USD</td>
+                        <td>{{ position.exit_position_size or position.quantity }}</td>
+                        <td class="{{ 'profit' if position.profit_and_loss > 0 else 'loss' }}">
+                            {{ position.profit_and_loss }} USD<br>
+                            ({{ position.profit_and_loss_percent }}%)
+                        </td>
+                        <td>{{ position.run_up }} USD<br>{{ position.run_up_pct }}%</td>
+                        <td>{{ position.drawdown }} USD<br>{{ position.drawdown_pct }}%</td>
+                        <td>{{ position.cumulative_profit_and_loss or '--' }} USD</td>
+                    </tr>
+                    <tr>
+                        <td class="trade-type entry">Entry</td>
+                        <td>{{ position.open_datetime }}</td>
+                        <td>{{ position.entry_signal or 'Long' }}</td>
+                        <td>{{ position.open_market_price }} USD</td>
+                        <td>{{ position.quantity }} K USD</td>
+                        <td colspan="4"></td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+        <p class="no-trades">No closed trades available.</p>
+    {% endif %}
+</div>

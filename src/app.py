@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, render_template_string
 import json
 
 from indicators.indicator_classes import INDICATOR_CLASSES
@@ -6,9 +6,10 @@ from customization.customization_classes import IDENTIFY_ENTRY_CLASSES, IDENTIFY
 
 from init.initalization import backtest_init
 from configs.create_config import create_config_from_json
+from core.position_tracking.statistics import Statistics
 
 from log.logger import setup_logger
-log = setup_logger("Flask", mode="on")
+log = setup_logger("Flask", mode="off")
 
 app = Flask(__name__)
 
@@ -59,11 +60,86 @@ def submit():
     json_data = request.get_json()
     print("📦 Received data:\n", json.dumps(json_data, indent=4))
 
+    # === 1. Build and run backtest ===
     config = create_config_from_json(json_data)
     backtest_init(config)
 
-    # Return status
-    return jsonify({"status": "success", "received": json_data})
+    trading_state = config.trading_state
+
+    # Pass actual position objects (not dicts) so HTML can use dot notation
+    closed_positions = trading_state.closed_positions
+
+    # === 2. Compute statistics ===
+    statistics = Statistics(trading_state, config.main_time_series.candle_size)
+    metrics = statistics.to_dict()
+
+    # === 3. Render HTML partials ===
+    list_of_trades_html = render_template(
+        "partials/list_of_trades.html",
+        positions=closed_positions
+    )
+
+    # Placeholder partials (you can replace later)
+    overview_html = render_template_string("""
+        <h3>Overview</h3>
+        <p>Total Trades: {{ metrics.total_trades if metrics.total_trades is defined else 'N/A' }}</p>
+        <p>Net Profit: {{ metrics.net_profit if metrics.net_profit is defined else 'N/A' }}</p>
+    """, metrics=metrics)
+
+    performance_html = render_template_string("""
+        <h3>Performance</h3>
+        <p>Profit Factor: {{ metrics.profit_factor if metrics.profit_factor is defined else 'N/A' }}</p>
+        <p>Max Drawdown: {{ metrics.max_drawdown if metrics.max_drawdown is defined else 'N/A' }}</p>
+    """, metrics=metrics)
+
+    trade_analysis_html = render_template_string("""
+        <h3>Trade Analysis</h3>
+        <p>Sharpe Ratio: {{ metrics.sharpe_ratio if metrics.sharpe_ratio is defined else 'N/A' }}</p>
+        <p>Win Rate: {{ metrics.win_rate if metrics.win_rate is defined else 'N/A' }}%</p>
+    """, metrics=metrics)
+
+    # === 4. Return JSON payload ===
+    return jsonify({
+        "overview": overview_html,
+        "performance": performance_html,
+        "trade_analysis": trade_analysis_html,
+        "list_of_trades": list_of_trades_html
+    })
+
+
+    # data = request.get_json()
+
+    # # Example: simulate the 'positions' list
+    # positions = [
+    #     {
+    #         "close_datetime": "2025-11-01 14:00",
+    #         "exit_signal": "TP1",
+    #         "close_market_price": 104.25,
+    #         "exit_position_size": 1.0,
+    #         "profit_and_loss": 250.0,
+    #         "profit_and_loss_percent": 5.0,
+    #         "run_up": 300.0,
+    #         "run_up_pct": 6.0,
+    #         "drawdown": -100.0,
+    #         "drawdown_pct": -2.0,
+    #         "cumulative_profit_and_loss": 250.0,
+    #         "open_datetime": "2025-10-30 09:00",
+    #         "entry_signal": "Long",
+    #         "open_market_price": 100.00,
+    #         "quantity": 1.0
+    #     }
+    # ]
+
+    # # Render the "List of Trades" HTML server-side
+    # list_of_trades_html = render_template('partials/list_of_trades.html', positions=positions)
+
+    # # Example placeholders for other tabs:
+    # return jsonify({
+    #     "overview": "<h3>Overview</h3><p>Summary of strategy performance.</p>",
+    #     "performance": "<h3>Performance</h3><p>Profit factor: 1.8</p>",
+    #     "trade_analysis": "<h3>Trade Analysis</h3><p>Sharpe ratio: 1.5</p>",
+    #     "list_of_trades": list_of_trades_html
+    # })
 
 
 if __name__ == '__main__':

@@ -11,23 +11,39 @@
 <ul id="tabs">
     <li><a class="active" data-tab="load" href="#">Load</a></li>
     <li><a data-tab="create_edit" href="#">Create/Edit</a></li>
-    <li><a data-tab="results" href="#">Results</a></li>
+    <li><a data-tab="overview" href="#">Overview</a></li>
+    <li><a data-tab="performance" href="#">Performance</a></li>
+    <li><a data-tab="trade_analysis" href="#">Trade Analysis</a></li>
+    <li><a data-tab="list_of_trades" href="#">List of Trades</a></li>
 </ul>
 
 <!-- Keep all tabs in the DOM -->
 <div id="tab-content">
-    <div id="loadTab" class="tab-pane"> 
-        <!-- Load tab content -->
+    <!-- Load tab -->
+    <div id="loadTab" class="tab-pane">
         <p>Load content here...</p>
     </div>
 
+    <!-- Create/Edit tab -->
     <div id="create_editTab" class="tab-pane" style="display:none;">
         {% include 'create_edit.html' %}
     </div>
 
-    <div id="resultsTab" class="tab-pane" style="display:none;">
-        <!-- Results tab content -->
-        <p>Results content here...</p>
+    <!-- New tabs replacing Results -->
+    <div id="overviewTab" class="tab-pane" style="display:none;">
+        <p>Overview content here...</p>
+    </div>
+
+    <div id="performanceTab" class="tab-pane" style="display:none;">
+        <p>Performance metrics here...</p>
+    </div>
+
+    <div id="trade_analysisTab" class="tab-pane" style="display:none;">
+        <p>Trade analysis content here...</p>
+    </div>
+
+    <div id="list_of_tradesTab" class="tab-pane" style="display:none;">
+        <p>List of trades here...</p>
     </div>
 </div>
 
@@ -35,7 +51,6 @@
 
 <!-- Tabs logic -->
 <script src="{{ url_for('static', filename='js/tabs.js') }}"></script>
-
 
 <script>
 document.getElementById('darkModeBtn').addEventListener('click', () => {

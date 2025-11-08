@@ -267,3 +267,90 @@ button:hover {
       "exit";
   }
 }
+
+/* === List of Trades Table === */
+.section-title {
+  margin-bottom: 15px;
+  color: var(--accent-main);
+  font-weight: 600;
+  border-bottom: 2px solid var(--border-color);
+  padding-bottom: 6px;
+  letter-spacing: 0.3px;
+}
+
+.table-wrapper {
+  overflow-x: auto;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  box-shadow: var(--shadow);
+}
+
+.trades-table {
+  width: 100%;
+  border-collapse: collapse;
+  color: var(--text-main);
+  background: var(--bg-card);
+  transition: background 0.3s, color 0.3s;
+}
+
+.trades-table th,
+.trades-table td {
+  border: 1px solid var(--border-color);
+  padding: 8px 10px;
+  text-align: center;
+  font-size: 0.9em;
+}
+
+.trades-table th {
+  background: var(--bg-section1);
+  font-weight: 600;
+  color: var(--text-label);
+}
+
+.trades-table tr:nth-child(even) {
+  background: var(--bg-section2);
+}
+
+/* Profit & Loss colors */
+.trades-table td.profit {
+  color: #2ecc71;
+  font-weight: 600;
+}
+.trades-table td.loss {
+  color: #e74c3c;
+  font-weight: 600;
+}
+
+/* Trade type column */
+.trade-type {
+  font-weight: 600;
+  text-transform: uppercase;
+}
+.trade-type.entry {
+  color: var(--accent-main);
+}
+.trade-type.exit {
+  color: var(--accent-light);
+}
+
+/* Links inside table */
+.trades-table a {
+  color: var(--accent-main);
+  text-decoration: none;
+  font-weight: 500;
+}
+.trades-table a:hover {
+  text-decoration: underline;
+}
+
+/* Empty state */
+.no-trades {
+  text-align: center;
+  color: var(--text-label);
+  background: var(--bg-card);
+  padding: 20px;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+}
+

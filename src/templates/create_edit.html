@@ -896,18 +896,32 @@ function parseTypedValue(value) {
 document.getElementById('submitBtn').addEventListener('click', async () => {
   const data = collectData();
   console.log("Sending data:", data);
+
   try {
     const res = await fetch("/submit", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data)
     });
+
     const result = await res.json();
-    alert("✅ Sent to Flask!\n\n" + JSON.stringify(result, null, 2));
+
+    // Populate each tab with HTML returned from Flask
+    document.getElementById('overviewTab').innerHTML = result.overview;
+    document.getElementById('performanceTab').innerHTML = result.performance;
+    document.getElementById('trade_analysisTab').innerHTML = result.trade_analysis;
+    document.getElementById('list_of_tradesTab').innerHTML = result.list_of_trades;
+
+    // Auto-switch to Overview
+    document.querySelector('[data-tab="overview"]').click();
+
   } catch (err) {
-    alert("❌ Failed to send data.");
+    console.error(err);
+    alert("❌ Failed to send data or process response.");
   }
 });
+
+
 </script>
 </body>
 </html>
