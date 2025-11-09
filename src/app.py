@@ -65,43 +65,38 @@ def submit():
     backtest_init(config)
 
     trading_state = config.trading_state
-
-    # Pass actual position objects (not dicts) so HTML can use dot notation
-    closed_positions = trading_state.closed_positions
+    closed_positions = trading_state.closed_positions  # actual position objects
 
     # === 2. Compute statistics ===
     statistics = Statistics(trading_state, config.main_time_series.candle_size)
-    metrics = statistics.to_dict()
+    metrics = statistics.to_dict()  # dict containing all performance metrics
 
     # === 3. Render HTML partials ===
+    # Use your actual Jinja templates now
+    # overview_html = render_template(
+    #     "partials/overview.html",
+    #     metrics=metrics
+    # )
+
+    # performance_html = render_template(
+    #     "partials/performance.html",
+    #     metrics=metrics
+    # )
+
+    trade_analysis_html = render_template(
+        "partials/trade_analysis.html",
+        metrics=metrics
+    )
+
     list_of_trades_html = render_template(
         "partials/list_of_trades.html",
         positions=closed_positions
     )
 
-    # Placeholder partials (you can replace later)
-    overview_html = render_template_string("""
-        <h3>Overview</h3>
-        <p>Total Trades: {{ metrics.total_trades if metrics.total_trades is defined else 'N/A' }}</p>
-        <p>Net Profit: {{ metrics.net_profit if metrics.net_profit is defined else 'N/A' }}</p>
-    """, metrics=metrics)
-
-    performance_html = render_template_string("""
-        <h3>Performance</h3>
-        <p>Profit Factor: {{ metrics.profit_factor if metrics.profit_factor is defined else 'N/A' }}</p>
-        <p>Max Drawdown: {{ metrics.max_drawdown if metrics.max_drawdown is defined else 'N/A' }}</p>
-    """, metrics=metrics)
-
-    trade_analysis_html = render_template_string("""
-        <h3>Trade Analysis</h3>
-        <p>Sharpe Ratio: {{ metrics.sharpe_ratio if metrics.sharpe_ratio is defined else 'N/A' }}</p>
-        <p>Win Rate: {{ metrics.win_rate if metrics.win_rate is defined else 'N/A' }}%</p>
-    """, metrics=metrics)
-
     # === 4. Return JSON payload ===
     return jsonify({
-        "overview": overview_html,
-        "performance": performance_html,
+        # "overview": overview_html,
+        # "performance": performance_html,
         "trade_analysis": trade_analysis_html,
         "list_of_trades": list_of_trades_html
     })
