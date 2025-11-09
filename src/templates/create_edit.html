@@ -891,7 +891,6 @@ function parseTypedValue(value) {
     // Everything else stays a string
     return value;
 }
-
 // ==== Submit ====
 document.getElementById('submitBtn').addEventListener('click', async () => {
   const data = collectData();
@@ -906,68 +905,35 @@ document.getElementById('submitBtn').addEventListener('click', async () => {
 
     const result = await res.json();
 
-    // Inject tab content
-    document.getElementById('overviewTab').innerHTML = result.overview;
-    document.getElementById('performanceTab').innerHTML = result.performance;
+    // Populate HTML partials first
     document.getElementById('trade_analysisTab').innerHTML = result.trade_analysis;
     document.getElementById('list_of_tradesTab').innerHTML = result.list_of_trades;
 
-    // === Build Chart.js chart after injection ===
-    // === Build Chart.js chart after injection ===
-    const chartDataEl = document.getElementById('overviewTab').querySelector('#chart-data');
-    if (chartDataEl) {
-      const chartData = JSON.parse(chartDataEl.textContent);
-      const ctx = document.getElementById('overviewTab').querySelector('#overviewChart').getContext('2d');
+    // Populate overview tab
+    document.getElementById('overviewTab').innerHTML = `
+      <div class="overview-section" style="padding:20px;">
+        <h3>Trading Overview</h3>
+        <div class="metrics-summary" style="display:flex; gap:20px; flex-wrap:wrap;">
+          <div><b>Total P&L:</b> ${result.metrics.total_profit_and_loss ?? 'N/A'}</div>
+          <div><b>Max Drawdown:</b> ${result.metrics.max_equity_drawdown ?? 'N/A'}</div>
+          <div><b>Total Trades:</b> ${result.metrics.total_trades ?? 'N/A'}</div>
+          <div><b>Profit Factor:</b> ${result.metrics.profit_factor ?? 'N/A'}</div>
+        </div>
+        <div id="chart-container" style="position:relative; width:100%; height:60vh; margin:40px auto;">
+          <canvas id="overviewChart"></canvas>
+        </div>
+      </div>
+    `;
 
-      // ✅ Safely destroy existing chart if it exists
-      if (window.overviewChart && typeof window.overviewChart.destroy === 'function') {
-        window.overviewChart.destroy();
-      }
+    // Initialize chart immediately
+    updateOverviewChart(
+      result.chartLabels,
+      result.runUpData,
+      result.drawdownData,
+      result.cumulativePnLData
+    );
 
-      // ✅ Create and store new chart instance
-      window.overviewChart = new Chart(ctx, {
-        type: 'bar',
-        data: {
-          labels: chartData.dates,
-          datasets: [
-            {
-              type: 'bar',
-              label: 'Trade P&L',
-              data: chartData.profit_loss,
-              backgroundColor: chartData.profit_loss.map(v => v >= 0 ? 'rgba(0,200,132,0.6)' : 'rgba(255,99,132,0.6)'),
-              borderWidth: 1
-            },
-            {
-              type: 'line',
-              label: 'Cumulative P&L',
-              data: chartData.cumulative_pnl,
-              borderColor: 'rgba(255,99,132,1)',
-              fill: false,
-              tension: 0.3,
-              pointRadius: 2
-            }
-          ]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,   // ✅ allows chart to stretch vertically
-          interaction: { mode: 'index', intersect: false },
-          stacked: false,
-          scales: {
-            x: { ticks: { autoSkip: true, maxTicksLimit: 10 } },
-            y: { title: { display: true, text: 'P&L (USD)' } }
-          },
-          plugins: {
-            legend: { position: 'top' },
-            title: { display: true, text: 'Trading Overview (P&L vs. Cumulative)' }
-          }
-        }
-
-      });
-    }
-
-
-    // Auto-switch to Overview tab
+    // Switch to overview tab automatically
     document.querySelector('[data-tab="overview"]').click();
 
   } catch (err) {
@@ -975,6 +941,99 @@ document.getElementById('submitBtn').addEventListener('click', async () => {
     alert("❌ Failed to send data or process response.");
   }
 });
+
+// ==== Overview Chart ====
+let overviewChart = null;
+
+function updateOverviewChart(labels, runUpData, drawdownData, cumulativePnLData) {
+  const canvas = document.getElementById('overviewChart');
+  if (!canvas) {
+    console.error("Overview chart canvas not found!");
+    return;
+  }
+
+  const ctx = canvas.getContext('2d');
+
+  if (overviewChart) {
+    overviewChart.destroy();
+  }
+
+  overviewChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [
+        {
+          label: 'Run-up',
+          data: runUpData,
+          backgroundColor: runUpData.map(v => v >= 0 ? 'rgba(75,192,192,0.6)' : 'rgba(0,128,0,0.6)'),
+          stack: 'Stack 0',
+        },
+        {
+          label: 'Drawdown',
+          data: drawdownData.map(v => -v),
+          backgroundColor: drawdownData.map(v => v >= 0 ? 'rgba(255,99,132,0.6)' : 'rgba(128,0,0,0.6)'),
+          stack: 'Stack 0',
+        },
+        {
+          type: 'line',
+          label: 'Cumulative P&L',
+          data: cumulativePnLData,
+          borderColor: 'rgba(54,162,235,1)',
+          backgroundColor: 'rgba(54,162,235,0.1)',
+          fill: false,
+          tension: 0.1,
+          yAxisID: 'y1',
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'nearest', intersect: false },
+      scales: {
+        y: {
+          stacked: true,
+          beginAtZero: true,
+          title: { display: true, text: 'USD' },
+        },
+        y1: {
+          type: 'linear',
+          position: 'right',
+          grid: { drawOnChartArea: false },
+          title: { display: true, text: 'Cumulative P&L' },
+        }
+      },
+      plugins: {
+        tooltip: {
+          callbacks: {
+            title: (items) => `Trade #${items[0].dataIndex + 1}`,
+            label: (item) => {
+              let val = item.raw;
+              if (item.dataset.label === 'Drawdown') val = Math.abs(val);
+              return `${item.dataset.label}: ${val.toFixed(2)} USD`;
+            },
+            footer: (items) => {
+              const idx = items[0].dataIndex;
+              const pnl = cumulativePnLData[idx];
+              return `Cumulative P&L: ${pnl.toFixed(2)} USD`;
+            },
+          },
+          backgroundColor: 'rgba(50,50,50,0.9)',
+          titleFont: { size: 14, weight: 'bold' },
+          bodyFont: { size: 12 },
+          footerFont: { size: 12, style: 'italic' },
+        },
+        legend: { position: 'top' },
+        title: { display: true, text: 'Trade Run-up and Drawdown with Cumulative P&L' },
+      }
+    }
+  });
+}
+
+
+
+
 
 
 

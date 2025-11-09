@@ -67,39 +67,28 @@ def submit():
     backtest_init(config)
 
     trading_state = config.trading_state
-    closed_positions = [cp.to_dict() for cp in trading_state.closed_positions]
+    closed_positions = trading_state.closed_positions  # actual position objects
 
     # === 2. Compute statistics ===
     statistics = Statistics(trading_state, config.main_time_series.candle_size)
-    metrics = statistics.to_dict()
+    metrics = statistics.to_dict()  # dict containing all performance metrics
 
-    # === 3. Prepare chart data for overview ===
-    df = pd.DataFrame(closed_positions)
-    if not df.empty:
-        df['close_datetime'] = pd.to_datetime(df['close_datetime'])
-        df.sort_values('close_datetime', inplace=True)
-        df.reset_index(drop=True, inplace=True)
+    # === Prepare chart data arrays ===
+    chart_labels = []
+    run_up_data = []
+    drawdown_data = []
+    cumulative_pnl_data = []
 
-        chart_data = {
-            "dates": df["close_datetime"].dt.strftime("%Y-%m-%d").tolist(),
-            "profit_loss": df["profit_and_loss"].tolist(),
-            "cumulative_pnl": df["cumulative_profit_and_loss"].tolist()
-        }
-    else:
-        chart_data = {"dates": [], "profit_loss": [], "cumulative_pnl": []}
+    for i, pos in enumerate(closed_positions):
+        pos_dict = pos.to_dict()
+        # Label can be trade number or close_datetime string
+        label = f"Trade #{i+1}"  # or pos_dict['close_datetime'].strftime(...) if needed
+        chart_labels.append(label)
+        run_up_data.append(pos_dict.get("run_up", 0))
+        drawdown_data.append(pos_dict.get("drawdown", 0))
+        cumulative_pnl_data.append(pos_dict.get("cumulative_profit_and_loss", 0))
 
-    # === 4. Render tab partials ===
-    overview_html = render_template(
-        "partials/overview.html",
-        metrics=metrics,
-        chart_data=json.dumps(chart_data)
-    )
-
-    # performance_html = render_template(
-    #     "partials/performance.html",
-    #     metrics=metrics
-    # )
-
+    # === 3. Render HTML partials ===
     trade_analysis_html = render_template(
         "partials/trade_analysis.html",
         metrics=metrics
@@ -110,13 +99,17 @@ def submit():
         positions=closed_positions
     )
 
-    # === 5. Return JSON payload ===
+    # === 4. Return JSON payload including chart data ===
     return jsonify({
-        "overview": overview_html,
-        #"performance": performance_html,
         "trade_analysis": trade_analysis_html,
-        "list_of_trades": list_of_trades_html
+        "list_of_trades": list_of_trades_html,
+        "chartLabels": chart_labels,
+        "runUpData": run_up_data,
+        "drawdownData": drawdown_data,
+        "cumulativePnLData": cumulative_pnl_data,
+        "metrics": metrics
     })
+
 
 
 
