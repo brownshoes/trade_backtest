@@ -354,3 +354,103 @@ button:hover {
   border: 1px solid var(--border-color);
 }
 
+
+/* === Metric Cards === */
+.metric-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 15px 20px;
+  text-align: center;
+  box-shadow: var(--shadow);
+  transition: background 0.3s, border-color 0.3s, transform 0.2s;
+}
+
+.metric-card:hover {
+  transform: translateY(-2px);
+}
+
+.metric-title {
+  font-size: 0.9em;
+  color: var(--text-label);
+  margin-bottom: 6px;
+  text-transform: capitalize;
+}
+
+.metric-value {
+  font-size: 1.3em;
+  font-weight: 600;
+  color: var(--accent-main);
+}
+
+/* Conditional color helpers */
+.metric-positive .metric-value {
+  color: #2ecc71; /* green */
+}
+.metric-negative .metric-value {
+  color: #e74c3c; /* red */
+}
+.metric-neutral .metric-value {
+  color: var(--text-label);
+}
+
+/* === Metric Table (for Trade Analysis) === */
+.metric-table-wrapper {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  box-shadow: var(--shadow);
+  overflow-x: auto;
+  margin-top: 10px;
+}
+
+.metric-table {
+  width: 100%;
+  border-collapse: collapse;
+  color: var(--text-main);
+  font-size: 0.95em;
+}
+
+.metric-table th,
+.metric-table td {
+  border-bottom: 1px solid var(--border-color);
+  padding: 10px 15px;
+  text-align: left;
+}
+
+.metric-table th {
+  background: var(--bg-section1);
+  color: var(--text-label);
+  font-weight: 600;
+  letter-spacing: 0.3px;
+}
+
+.metric-table tr:nth-child(even) {
+  background: var(--bg-section2);
+}
+
+.metric-table tr:hover {
+  background: var(--bg-section1);
+}
+
+.metric-name {
+  text-transform: capitalize;
+}
+
+.metric-result {
+  text-align: right;
+  font-weight: 600;
+}
+
+/* Conditional coloring for numeric values */
+.metric-positive .metric-result {
+  color: #2ecc71; /* green */
+}
+.metric-negative .metric-result {
+  color: #e74c3c; /* red */
+}
+.metric-neutral .metric-result {
+  color: var(--text-main);
+}
+
+
