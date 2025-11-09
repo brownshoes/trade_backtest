@@ -906,13 +906,68 @@ document.getElementById('submitBtn').addEventListener('click', async () => {
 
     const result = await res.json();
 
-    // Populate each tab with HTML returned from Flask
+    // Inject tab content
     document.getElementById('overviewTab').innerHTML = result.overview;
     document.getElementById('performanceTab').innerHTML = result.performance;
     document.getElementById('trade_analysisTab').innerHTML = result.trade_analysis;
     document.getElementById('list_of_tradesTab').innerHTML = result.list_of_trades;
 
-    // Auto-switch to Overview
+    // === Build Chart.js chart after injection ===
+    // === Build Chart.js chart after injection ===
+    const chartDataEl = document.getElementById('overviewTab').querySelector('#chart-data');
+    if (chartDataEl) {
+      const chartData = JSON.parse(chartDataEl.textContent);
+      const ctx = document.getElementById('overviewTab').querySelector('#overviewChart').getContext('2d');
+
+      // ✅ Safely destroy existing chart if it exists
+      if (window.overviewChart && typeof window.overviewChart.destroy === 'function') {
+        window.overviewChart.destroy();
+      }
+
+      // ✅ Create and store new chart instance
+      window.overviewChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: chartData.dates,
+          datasets: [
+            {
+              type: 'bar',
+              label: 'Trade P&L',
+              data: chartData.profit_loss,
+              backgroundColor: chartData.profit_loss.map(v => v >= 0 ? 'rgba(0,200,132,0.6)' : 'rgba(255,99,132,0.6)'),
+              borderWidth: 1
+            },
+            {
+              type: 'line',
+              label: 'Cumulative P&L',
+              data: chartData.cumulative_pnl,
+              borderColor: 'rgba(255,99,132,1)',
+              fill: false,
+              tension: 0.3,
+              pointRadius: 2
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,   // ✅ allows chart to stretch vertically
+          interaction: { mode: 'index', intersect: false },
+          stacked: false,
+          scales: {
+            x: { ticks: { autoSkip: true, maxTicksLimit: 10 } },
+            y: { title: { display: true, text: 'P&L (USD)' } }
+          },
+          plugins: {
+            legend: { position: 'top' },
+            title: { display: true, text: 'Trading Overview (P&L vs. Cumulative)' }
+          }
+        }
+
+      });
+    }
+
+
+    // Auto-switch to Overview tab
     document.querySelector('[data-tab="overview"]').click();
 
   } catch (err) {
@@ -920,6 +975,7 @@ document.getElementById('submitBtn').addEventListener('click', async () => {
     alert("❌ Failed to send data or process response.");
   }
 });
+
 
 
 </script>

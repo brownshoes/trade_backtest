@@ -1,0 +1,21 @@
+<div class="overview-section" style="padding:20px;">
+  <h3>Trading Overview</h3>
+
+  <div class="metrics-summary" style="display:flex; gap:20px; flex-wrap:wrap;">
+    <div><b>Total P&L:</b> {{ metrics.get('total_profit_and_loss', 'N/A') }}</div>
+    <div><b>Max Drawdown:</b> {{ metrics.get('max_equity_drawdown', 'N/A') }}</div>
+    <div><b>Total Trades:</b> {{ metrics.get('total_trades', 'N/A') }}</div>
+    <div><b>Profit Factor:</b> {{ metrics.get('profit_factor', 'N/A') }}</div>
+  </div>
+
+  <!-- ✅ Make container take up full width & height -->
+  <div id="chart-container"
+       style="position:relative; width:100%; height:60vh; margin:40px auto;">
+    <canvas id="overviewChart"></canvas>
+  </div>
+
+  <!-- Hidden JSON for chart data -->
+  <script id="chart-data" type="application/json">
+    {{ chart_data | safe }}
+  </script>
+</div>
