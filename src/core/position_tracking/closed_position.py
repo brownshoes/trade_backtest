@@ -124,20 +124,20 @@ class ClosedPosition:
     def to_dict(self):
         return {
             "quantity": self.quantity,
-            "fees": float(self.fees),
-            "open_market_price": float(self.open_market_price),
-            "close_market_price": float(self.close_market_price),
+            "fees": round(float(self.fees), 2),
+            "open_market_price": round(float(self.open_market_price), 2),
+            "close_market_price": round(float(self.close_market_price), 2),
             "open_datetime": self.open_datetime,
             "close_datetime": self.close_datetime,
             "position_duration": self.position_duration,
             "position_duration_formatted": self.position_duration_formated,
-            "profit_and_loss": float(self.profit_and_loss),
-            "profit_and_loss_percent": float(self.profit_and_loss_percent),
-            "run_up": float(self.run_up),
-            "run_up_pct": float(self.run_up_pct),
-            "drawdown": float(self.drawdown),
-            "drawdown_pct": float(self.drawdown_pct),
-            "cumulative_profit_and_loss" : float(self.cumulative_profit_and_loss),
+            "profit_and_loss": round(float(self.profit_and_loss), 2),
+            "profit_and_loss_percent": round(float(self.profit_and_loss_percent), 2),
+            "run_up": round(float(self.run_up), 2),
+            "run_up_pct": round(float(self.run_up_pct), 2),
+            "drawdown": round(float(self.drawdown), 2),
+            "drawdown_pct": round(float(self.drawdown_pct), 2),
+            "cumulative_profit_and_loss": round(float(self.cumulative_profit_and_loss), 2),
             "trade_results": [
                 sell_trade.trade_result.to_dict()
                 for sell_trade in self.sell_trades

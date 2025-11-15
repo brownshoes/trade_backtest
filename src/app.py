@@ -11,7 +11,7 @@ from configs.create_config import create_config_from_json
 from core.position_tracking.statistics import Statistics
 
 from log.logger import setup_logger
-log = setup_logger("Flask", mode="off")
+log = setup_logger("Flask", mode="On")
 
 app = Flask(__name__)
 
@@ -75,15 +75,18 @@ def submit():
 
     # === Prepare chart data arrays ===
     chart_labels = []
+    pnl_data = []
     run_up_data = []
     drawdown_data = []
     cumulative_pnl_data = []
 
-    for i, pos in enumerate(closed_positions):
+    for pos in closed_positions:
         pos_dict = pos.to_dict()
-        # Label can be trade number or close_datetime string
-        label = f"Trade #{i+1}"  # or pos_dict['close_datetime'].strftime(...) if needed
+        close_dt = pos_dict['close_datetime']
+        label = close_dt.strftime("%Y-%m-%d") if not isinstance(close_dt, str) else close_dt.split("T")[0]
+        
         chart_labels.append(label)
+        pnl_data.append(pos_dict.get("profit_and_loss", 0))
         run_up_data.append(pos_dict.get("run_up", 0))
         drawdown_data.append(pos_dict.get("drawdown", 0))
         cumulative_pnl_data.append(pos_dict.get("cumulative_profit_and_loss", 0))
@@ -104,6 +107,7 @@ def submit():
         "trade_analysis": trade_analysis_html,
         "list_of_trades": list_of_trades_html,
         "chartLabels": chart_labels,
+        "pnlData": pnl_data,
         "runUpData": run_up_data,
         "drawdownData": drawdown_data,
         "cumulativePnLData": cumulative_pnl_data,

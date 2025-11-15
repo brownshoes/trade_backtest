@@ -10,9 +10,9 @@
                     <th>Trade #</th>
                     <th>Type</th>
                     <th>Date/Time</th>
-                    <th>Signal</th>
                     <th>Price</th>
-                    <th>Position Size</th>
+                    <th>Quantity</th>
+                    <th>Fees</th>
                     <th>Net P&amp;L</th>
                     <th>Run-up</th>
                     <th>Drawdown</th>
@@ -22,28 +22,27 @@
             <tbody>
                 {% for position in positions %}
                     <tr>
-                        <td rowspan="2">
-                            <a href="#">{{ loop.revindex }} Long</a>
-                        </td>
+                        <td rowspan="2">{{ loop.index }}</td>
                         <td class="trade-type exit">Exit</td>
-                        <td>{{ position.close_datetime }}</td>
-                        <td>{{ position.exit_signal or 'TP1' }}</td>
-                        <td>{{ position.close_market_price }} USD</td>
+                        <td>{{ position.close_datetime | replace(",", ",<wbr>") | safe }}</td>
+                        <td>${{ "%.2f"|format(position.close_market_price) }}</td>
                         <td>{{ position.exit_position_size or position.quantity }}</td>
+                        <td>${{ "%.2f"|format(position.fees) }}</td>
                         <td class="{{ 'profit' if position.profit_and_loss > 0 else 'loss' }}">
-                            {{ position.profit_and_loss }} USD<br>
-                            ({{ position.profit_and_loss_percent }}%)
+                            ${{ "%.2f"|format(position.profit_and_loss) }}<br>
+                            ({{ "%.2f"|format(position.profit_and_loss_percent) }}%)
                         </td>
-                        <td>{{ position.run_up }} USD<br>{{ position.run_up_pct }}%</td>
-                        <td>{{ position.drawdown }} USD<br>{{ position.drawdown_pct }}%</td>
-                        <td>{{ position.cumulative_profit_and_loss or '--' }} USD</td>
+                        <td>${{ "%.2f"|format(position.run_up) }}<br>{{ "%.2f"|format(position.run_up_pct) }}%</td>
+                        <td>${{ "%.2f"|format(position.drawdown) }}<br>{{ "%.2f"|format(position.drawdown_pct) }}%</td>
+                        <td>${{ "%.2f"|format(position.cumulative_profit_and_loss or 0) }}</td>
                     </tr>
+
                     <tr>
                         <td class="trade-type entry">Entry</td>
-                        <td>{{ position.open_datetime }}</td>
-                        <td>{{ position.entry_signal or 'Long' }}</td>
-                        <td>{{ position.open_market_price }} USD</td>
-                        <td>{{ position.quantity }} K USD</td>
+                        <td>{{ position.open_datetime | replace(",", ",<wbr>") | safe }}</td>
+                        <td>${{ "%.2f"|format(position.open_market_price) }}</td>
+                        <td>{{ position.quantity }}</td>
+                        <td>${{ "%.2f"|format(position.fees) }}</td>
                         <td colspan="4"></td>
                     </tr>
                 {% endfor %}
