@@ -25,7 +25,9 @@ class OpenPosition:
         # Market tracking
         self.bars = 0
         self.max_price_seen = self.entry_price
+        self.max_price_seen_timestamp = trade_overview_buy.executed_timestamp
         self.min_price_seen = self.entry_price
+        self.min_price_seen_timestamp = trade_overview_buy.executed_timestamp
 
         self.run_up = Decimal(0)
         self.run_up_dollar = Decimal(0)
@@ -35,18 +37,35 @@ class OpenPosition:
         self.drawdown_dollar = Decimal(0)
         self.drawdown_pct = Decimal(0)
 
-    def update_position(self, current_price: Decimal) -> None:
+    def update_position(self, exg_state) -> None:
         """Update run-up and drawdown stats based on current market price."""
-        self.max_price_seen = max(self.max_price_seen, current_price)
-        self.min_price_seen = min(self.min_price_seen, current_price)
+        # Update max price
+        if exg_state.current_price > self.max_price_seen:
+            self.max_price_seen = exg_state.current_price
+            self.max_price_seen_timestamp = exg_state.current_timestamp
 
-        self.run_up = self.max_price_seen - self.entry_price
-        self.run_up_pct = (self.run_up / self.entry_price) * Decimal(100)
-        self.run_up_dollar = self.run_up * self.entry_quantity
+        # Update min price
+        if exg_state.current_price < self.min_price_seen:
+            self.min_price_seen = exg_state.current_price
+            self.min_price_seen_timestamp = exg_state.current_timestamp
+        
 
-        self.drawdown = self.entry_price - self.min_price_seen
-        self.drawdown_pct = (self.drawdown / self.entry_price) * Decimal(100)
-        self.drawdown_dollar = self.drawdown * self.entry_quantity
+        # self.run_up = self.max_price_seen - self.entry_price
+        # self.run_up_pct = (self.run_up / self.entry_price) * Decimal(100)
+        # self.run_up_dollar = self.run_up * self.entry_quantity
+
+
+        # print(f"""
+        # self.max_price_seen: {self.max_price_seen}
+        # self.run_up: {self.run_up}
+        # self.run_up_pct: {self.run_up_pct}
+        # self.run_up_dollar: {self.run_up_dollar}
+        # """)
+
+
+        # self.drawdown = self.entry_price - self.min_price_seen
+        # self.drawdown_pct = (self.drawdown / self.entry_price) * Decimal(100)
+        # self.drawdown_dollar = self.drawdown * self.entry_quantity
 
         self.bars += 1  # Optionally increment bar count here
 

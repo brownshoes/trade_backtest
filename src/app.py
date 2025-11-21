@@ -11,7 +11,7 @@ from configs.create_config import create_config_from_json
 from core.position_tracking.statistics import Statistics
 
 from log.logger import setup_logger
-log = setup_logger("Flask", mode="On")
+log = setup_logger("Flask", mode="Off")
 
 app = Flask(__name__)
 

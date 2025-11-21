@@ -55,13 +55,16 @@ class Backtest:
 
         timestamps = df["Timestamp"].to_numpy()
         opens = df["Open"].to_numpy()
+        lows = df["Low"].to_numpy()
+        highs = df["High"].to_numpy()
 
         for i in range(len(df)):
             '''Treat the current state as the start of the candle. Ex: At 1200, the price is 'X'. Hence use open price'''
+            ''' Perform checks on the highs and lows to see if order executed. Then set price at open for candles'''
+            self._perform_checks(opens[i], timestamps[i], "open")
+            self._perform_checks(lows[i], timestamps[i], "low")
+            self._perform_checks(highs[i], timestamps[i], "high")
             self.exg_state.update_current_price_timestamp(opens[i], timestamps[i])
-            self.client.check_orders_for_execution()
-            self.trading.check_open_orders_for_completion(self.exg_state)
-            self.limit_adjust.adjust_limit_orders(self.trading.placeBuy, self.trading.placeSell, self.exg_state, self.trading_state, self.buy_strategy, self.sell_strategy)
 
             '''
             Check each time_series and see if the current timestamp matches the next timestamp in the time_series.
@@ -97,8 +100,8 @@ class Backtest:
             '''If a time_series was updated, execute trading_strategy'''
             if self.min_num_candles_buffered and time_series_updated and timestamp >= self.start_unix:
                 #Update OpenPositions first
-                if self.main_time_series in time_series_updated:
-                    self.trading_state.update_open_positions(Decimal(opens[i]))
+                # if self.main_time_series in time_series_updated:
+                #     self.trading_state.update_open_positions(Decimal(opens[i]))
 
                 self.trading.execute_trading_strategy(self.exg_state, time_series_updated)
                 self.client.check_orders_for_execution()
@@ -109,6 +112,13 @@ class Backtest:
             '''Check here following the increment of the index. Takes effect the next iteration'''
             self._check_min_num_of_candles()
             self.exg_state.validate_exchange_state()
+
+    def _perform_checks(self, price, timestamp):
+        self.exg_state.update_current_price_timestamp(price, timestamp)
+        self.trading_state.update_open_positions(self.exg_state)
+        self.client.check_orders_for_execution()
+        self.trading.check_open_orders_for_completion(self.exg_state)
+        self.limit_adjust.adjust_limit_orders(self.trading.placeBuy, self.trading.placeSell, self.exg_state, self.trading_state, self.buy_strategy, self.sell_strategy)
 
     def _check_min_num_of_candles(self):
         if not self.min_num_candles_buffered:

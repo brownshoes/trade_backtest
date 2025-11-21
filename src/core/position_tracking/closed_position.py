@@ -1,5 +1,7 @@
 from decimal import Decimal
 from datetime import datetime, timedelta
+import sys
+
 
 from core.position_tracking.open_position import OpenPosition
 from core.position_tracking.trade_data import TradeOverview
@@ -16,7 +18,7 @@ class ClosedPosition:
 
         # Core stats
         self.quantity = sum(t.quantity for t in self.sell_trades)
-        self.fees = self.calculate_total_fees()
+        self.fees = self.calculate_fees(self.all_trades)
         self.open_market_price = self.entry_trade.executed_market_price
         self.close_market_price = self.sell_trades[-1].executed_market_price
         self.open_datetime = self.entry_trade.executed_datetime
@@ -36,18 +38,26 @@ class ClosedPosition:
         self.drawdown, self.drawdown_pct = self.calculate_drawdown()
 
         self.cumulative_profit_and_loss = None
-
-    def calculate_total_fees(self) -> Decimal:
-        return sum((t.fee or Decimal(0)) for t in self.all_trades)
+    
+    def calculate_fees(self, trades) -> Decimal:
+        return sum((t.fee or Decimal(0)) for t in trades)
 
     def calculate_profit_and_loss(self) -> tuple[Decimal, Decimal]:
         entry_price = self.open_market_price
         entry_quantity = self.entry_trade.quantity
-        total_entry_value = entry_price * entry_quantity
 
+        # Entry value already has the fees removed
+        #Ex: Buy .17507(entry_quantity) at $57057(entry_price). This costs $9998.92,
+        # but we only get $9989 worth 
+        total_entry_value = entry_price * entry_quantity 
+
+        #Fees not included 
         total_exit_value = sum(t.executed_market_price * t.quantity for t in self.sell_trades)
-        net_pnl = total_exit_value - total_entry_value - self.fees
+        #net_pnl = total_exit_value - total_entry_value - self.fees
 
+        #Fees. Only calculate the fess of the sells, The buy already has done so
+        net_pnl = total_exit_value - total_entry_value - self.calculate_fees(self.sell_trades)
+ 
         pnl_pct = (net_pnl / total_entry_value) * Decimal(100) if total_entry_value != 0 else Decimal(0)
         return net_pnl, pnl_pct
 
@@ -70,16 +80,28 @@ class ClosedPosition:
 
     def calculate_run_up(self) -> tuple[Decimal, Decimal]:
         entry_price = self.open_market_price
-        max_price = self.open_position.max_price_seen
+
+        if self.open_position.max_price_seen_timestamp == self.close_timestamp:
+            max_price = self.close_market_price
+        else:    
+            max_price = self.open_position.max_price_seen
+
         run_up_dollar = (max_price - entry_price) * self.entry_trade.quantity
         run_up_pct = ((max_price - entry_price) / entry_price) * Decimal(100) if entry_price != 0 else Decimal(0)
         return run_up_dollar, run_up_pct
 
     def calculate_drawdown(self) -> tuple[Decimal, Decimal]:
         entry_price = self.open_market_price
-        min_price = self.open_position.min_price_seen
-        drawdown_dollar = (entry_price - min_price) * self.entry_trade.quantity
-        drawdown_pct = ((entry_price - min_price) / entry_price) * Decimal(100) if entry_price != 0 else Decimal(0)
+
+        if self.open_position.min_price_seen_timestamp == self.close_timestamp:
+            min_price = self.close_market_price
+        else:    
+            min_price = self.open_position.min_price_seen
+
+        #result is always a negative value Flip: min_price - entry_price to be positive
+        drawdown_dollar = (min_price - entry_price) * self.entry_trade.quantity
+        drawdown_pct = ((min_price - entry_price) / entry_price) * Decimal(100) if entry_price != 0 else Decimal(0)
+        
         return drawdown_dollar, drawdown_pct
     
     def __str__(self) -> str:

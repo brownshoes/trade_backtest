@@ -47,19 +47,27 @@ class TradeResult:
         self.fee = sell_trade_overview.fee
         self.entry_datetime = open_position.trade_overview_buy.executed_datetime
         self.exit_datetime = sell_trade_overview.executed_datetime
+        self.exit_timestamp = sell_trade_overview.executed_timestamp
 
         # Total % of the original position this sell represents
         self.percent_of_position = (self.quantity / open_position.entry_quantity) * Decimal(100)
         self.total_position_percent_sold = open_position.percent_sold * Decimal(100)
 
-        # Run-up & drawdown before the sell
+        # Run-up & drawdown before the sell. 
+        # #Check that the runup or drawdown didn't go above or below the actual sell price(for backtesting)
         run_up = open_position.max_price_seen - self.entry_price
+        if open_position.max_price_seen_timestamp == self.exit_timestamp:
+            run_up = self.exit_price - self.entry_price
+
+        drawdown = self.entry_price - open_position.min_price_seen
+        if open_position.min_price_seen_timestamp == self.exit_timestamp:
+            drawdown = self.exit_price - self.entry_price
+
         self.run_up_dollar = run_up * self.quantity
         self.run_up_pct = (run_up / self.entry_price) * Decimal(100) if self.entry_price != 0 else Decimal(0)
 
-        drawdown = self.entry_price - open_position.min_price_seen
-        self.drawdown_dollar = drawdown * self.quantity
-        self.drawdown_pct = (drawdown / self.entry_price) * Decimal(100) if self.entry_price != 0 else Decimal(0)
+        self.drawdown_dollar = -abs(drawdown * self.quantity)
+        self.drawdown_pct = -(abs(drawdown / self.entry_price) * Decimal(100)) if self.entry_price != 0 else Decimal(0)
 
         # Profit/Loss for this sell
         pnl = (self.exit_price - self.entry_price) * self.quantity
