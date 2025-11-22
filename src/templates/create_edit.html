@@ -930,10 +930,14 @@ document.getElementById('submitBtn').addEventListener('click', async () => {
       <div class="overview-section" style="padding:20px;">
         <h3>Trading Overview</h3>
         <div class="metrics-summary" style="display:flex; gap:20px; flex-wrap:wrap;">
-          <div><b>Total P&L:</b> ${result.metrics.total_profit_and_loss ?? 'N/A'}</div>
-          <div><b>Max Drawdown:</b> ${result.metrics.max_equity_drawdown ?? 'N/A'}</div>
-          <div><b>Total Trades:</b> ${result.metrics.total_trades ?? 'N/A'}</div>
-          <div><b>Profit Factor:</b> ${result.metrics.profit_factor ?? 'N/A'}</div>
+        <div><b>Total P&L:</b> $${Number(result.metrics.total_profit_and_loss).toFixed(2)}</div>
+        <div><b>Max Drawdown:</b> $${Number(result.metrics.max_equity_drawdown).toFixed(2)}</div>
+        <div><b>Total Trades:</b> ${result.metrics.total_trades}</div>
+        <div><b>Profit Factor:</b> ${result.metrics.profit_factor === 'Infinity'
+              ? '∞'
+              : Number(result.metrics.profit_factor).toFixed(2)
+            }
+        </div>
         </div>
         <div id="chart-container" style="position:relative; width:100%; height:60vh; margin:40px auto;">
           <canvas id="overviewChart"></canvas>
@@ -982,23 +986,34 @@ function updateOverviewChart(labels, runUpData, drawdownData, cumulativePnLData)
         {
           label: 'Run-up',
           data: runUpData,
-          backgroundColor: runUpData.map(v => v >= 0 ? 'rgba(75,192,192,0.6)' : 'rgba(0,128,0,0.6)'),
+          backgroundColor: runUpData.map(() =>
+            'rgba(46, 204, 113, 0.75)' // emerald green
+          ),
+          borderColor: 'rgba(39, 174, 96, 1)',
+          borderWidth: 1,
           stack: 'Stack 0',
         },
         {
           label: 'Drawdown',
-          data: drawdownData.map(v => -v),
-          backgroundColor: drawdownData.map(v => v >= 0 ? 'rgba(255,99,132,0.6)' : 'rgba(128,0,0,0.6)'),
+          data: drawdownData, // already negative
+          backgroundColor: drawdownData.map(() =>
+            'rgba(231, 76, 60, 0.75)' // soft red
+          ),
+          borderColor: 'rgba(192, 57, 43, 1)',
+          borderWidth: 1,
           stack: 'Stack 0',
         },
         {
           type: 'line',
           label: 'Cumulative P&L',
           data: cumulativePnLData,
-          borderColor: 'rgba(54,162,235,1)',
-          backgroundColor: 'rgba(54,162,235,0.1)',
+          borderColor: 'rgba(52, 152, 219, 1)',     // bright clean blue
+          backgroundColor: 'rgba(52, 152, 219, 0.15)',
+          pointBackgroundColor: '#ffffff',
+          pointBorderColor: 'rgba(41, 128, 185, 1)',
+          pointRadius: 3,
           fill: false,
-          tension: 0.1,
+          tension: 0.2,
           yAxisID: 'y1',
         }
       ]
@@ -1046,12 +1061,6 @@ function updateOverviewChart(labels, runUpData, drawdownData, cumulativePnLData)
     }
   });
 }
-
-
-
-
-
-
 
 </script>
 </body>

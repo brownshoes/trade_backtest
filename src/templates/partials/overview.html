@@ -2,10 +2,10 @@
   <h3>Trading Overview</h3>
 
   <div class="metrics-summary" style="display:flex; gap:20px; flex-wrap:wrap;">
-    <div><b>Total P&L:</b> {{ metrics.get('total_profit_and_loss', 'N/A') }}</div>
-    <div><b>Max Drawdown:</b> {{ metrics.get('max_equity_drawdown', 'N/A') }}</div>
-    <div><b>Total Trades:</b> {{ metrics.get('total_trades', 'N/A') }}</div>
-    <div><b>Profit Factor:</b> {{ metrics.get('profit_factor', 'N/A') }}</div>
+    <div><b>Total P&L:</b> {{ metrics.get('total_profit_and_loss', 0) | float | round(2) }}</div>
+    <div><b>Max Drawdown:</b> {{ metrics.get('max_equity_drawdown', 0) | round(2) }}</div>
+    <div><b>Total Trades:</b> {{ metrics.get('total_trades', 0) }}</div>
+    <div><b>Profit Factor:</b> {{ metrics.get('profit_factor', 0) | round(2) }}</div>
   </div>
 
   <div id="chart-container" style="position:relative; width:100%; height:60vh; margin:40px auto;">

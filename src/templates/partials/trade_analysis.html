@@ -12,15 +12,41 @@
             <tbody>
                 {% for key, value in metrics.items() %}
                     {% if key not in ['overview'] %}
-                    {% set numeric = value|float(default=0) %}
-                    {% set class_name =
-                        'metric-positive' if numeric > 0 else
-                        'metric-negative' if numeric < 0 else
-                        'metric-neutral' %}
-                    <tr class="{{ class_name }}">
+
+                    {# -------------------------------
+                       Detect valid numeric & convert
+                       ------------------------------- #}
+                    {% if value == 'Infinity' %}
+                        {% set display = '∞' %}
+                    {% elif value is none or value == '' %}
+                        {% set display = '—' %}
+                    {% else %}
+                        {% set num = value|float(false) %}
+
+                        {% if num == 0 %}
+                            {% set display = '—' %}
+                        {% else %}
+                            {% set rounded = num|round(2) %}
+
+                            {# -------------------------------
+                               Currency formatting for money
+                               Detect percent metrics
+                               ------------------------------- #}
+                            {% if 'percent' in key or key.endswith('_pct') %}
+                                {% set display = rounded|string + '%' %}
+                            {% elif 'pnl' in key or 'profit' in key or 'drawdown' in key or 'fee' in key %}
+                                {% set display = '$' + '{:,.2f}'.format(rounded) %}
+                            {% else %}
+                                {% set display = '{:,.2f}'.format(rounded) %}
+                            {% endif %}
+                        {% endif %}
+                    {% endif %}
+
+                    <tr>
                         <td class="metric-name">{{ key.replace('_', ' ').title() }}</td>
-                        <td class="metric-result">{{ value or '—' }}</td>
+                        <td class="metric-result">{{ display }}</td>
                     </tr>
+
                     {% endif %}
                 {% endfor %}
             </tbody>

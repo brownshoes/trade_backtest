@@ -41,6 +41,15 @@ class Statistics:
         self.losing_trades = len(losing)
         self.percent_profitable = (self.winning_trades / self.total_trades) * 100
 
+        # Profit Factor
+        gross_profit = sum(p.profit_and_loss for p in winning)
+        gross_loss = sum(p.profit_and_loss for p in losing)
+
+        if gross_loss == 0:
+            self.profit_factor = Decimal('Infinity')
+        else:
+            self.profit_factor = gross_profit / abs(gross_loss)
+
         # Averages
         self.avg_profit_and_loss = self.total_profit_and_loss / self.total_trades
         self.avg_profit_and_loss_percent = self.total_profit_and_loss_percent / self.total_trades
@@ -184,6 +193,9 @@ class Statistics:
         
         # Number of trades with negative profit
         self.losing_trades = 0
+
+        #Profit factor ratio
+        self.profit_factor = 0
         
         # Percentage of trades that are profitable
         self.percent_profitable = 0
@@ -252,6 +264,21 @@ class Statistics:
             color = GREEN if value >= 0 else RED
             symbol = "%" if is_percent else ""
             return f"{color}{value:.2f}{symbol}{RESET}"
+        
+        # Color for profit factor depending on >1 (good) or <1 (bad)
+        def color_pf(pf):
+            if pf == float("inf") or pf == Decimal('Infinity'):
+                return f"{GREEN}∞{RESET}"
+            try:
+                pf_float = float(pf)
+            except:
+                return f"{YELLOW}{pf}{RESET}"
+            if pf_float > 1:
+                return f"{GREEN}{pf_float:.2f}{RESET}"
+            elif pf_float == 1:
+                return f"{YELLOW}{pf_float:.2f}{RESET}"
+            else:
+                return f"{RED}{pf_float:.2f}{RESET}"
 
         lines = [
             f"\n{BOLD}{BLUE}🔎 Strategy Performance Summary{RESET}",
@@ -276,6 +303,7 @@ class Statistics:
             f"{BOLD}Max Drawdown            :{RESET} {YELLOW}{fmt_money(self.max_equity_drawdown)} ({self.max_equity_drawdown_percent:.2f}%){RESET}",
             f"{BOLD}Sharpe Ratio            :{RESET} {self.sharpe_ratio if self.sharpe_ratio is not None else 'N/A'}",
             f"{BOLD}Sortino Ratio           :{RESET} {self.sortino_ratio if self.sortino_ratio is not None else 'N/A'}",
+            f"{BOLD}Profit Factor           :{RESET} {color_pf(self.profit_factor)}",
             "",
             f"{BOLD}Avg Bars in Trades      :{RESET} {self.avg_num_bars_in_trades:.1f}",
             f"{BOLD}Avg Bars (Winners)      :{RESET} {self.avg_num_bars_in_winning_trades:.1f}",
@@ -289,6 +317,7 @@ class Statistics:
         return {
             "total_profit_and_loss": float(self.total_profit_and_loss),
             "total_profit_and_loss_percent": float(self.total_profit_and_loss_percent),
+            "profit_factor": float(self.profit_factor),
             "max_equity_drawdown": float(self.max_equity_drawdown),
             "max_equity_drawdown_percent": float(self.max_equity_drawdown_percent),
             "total_fees": float(self.total_fees),

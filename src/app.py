@@ -11,7 +11,7 @@ from configs.create_config import create_config_from_json
 from core.position_tracking.statistics import Statistics
 
 from log.logger import setup_logger
-log = setup_logger("Flask", mode="On")
+log = setup_logger("Flask", mode="Off")
 
 app = Flask(__name__)
 
@@ -60,8 +60,7 @@ def tab_results():
 @app.route("/submit", methods=["POST"])
 def submit():
     json_data = request.get_json()
-    log.critical(f"📦 Received data:\n{json.dumps(json_data, indent=4)}")
-
+    log.info(f"📦 Received data:\n{json.dumps(json_data, indent=4)}")
 
     # === 1. Build and run backtest ===
     config = create_config_from_json(json_data)
