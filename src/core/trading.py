@@ -27,8 +27,6 @@ class Trading:
 
         self.trade_num = 0
 
-        self.log_trading()
-
     def execute_trading_strategy(self, exg_state, time_series_updated_list):
         self._execute_buy_logic(exg_state, time_series_updated_list)
         self._execute_sell_logic(exg_state, time_series_updated_list)
@@ -210,13 +208,3 @@ class Trading:
             logger.error(f"Sell order failed to place: {sell_order.order_string()} Time: {current_datetime}")
 
         return result
-
-    def log_trading(self):
-        trading_string = (
-            f"Trading Configuration:\n"
-            f"\tTrading: {self.trade}\n"
-            f"\tbuy_strategy: {type(self.buy_strategy)}\n"
-            f"\tsell_strategy: {type(self.sell_strategy)}\n"
-            f"\texit_strategy: {type(self.exit_strategy) if self.exit_strategy is not None else 'None'}\n"
-        )
-        logger.info(trading_string)

@@ -828,6 +828,20 @@ function getExits() {
     }));
 }
 
+function getTradeConditions(containerId) {
+    return [...document.querySelectorAll(`#${containerId} .block`)]
+        .map(div => {
+            const type = div.querySelector("h3")?.textContent?.trim();
+            const args = [...div.querySelectorAll("input")].map(input =>
+                parseTypedValue(input.value)
+            );
+            return { type, args };
+        });
+}
+
+
+
+
 function getStrategy(containerId) {
     const block = document.querySelector(`#${containerId} .block`);
     if (!block) return null;
@@ -867,6 +881,8 @@ function collectData() {
     }));
     data.identify_entry = getEntries();
     data.identify_exit = getExits();
+    data.entry_trade_conditions = getTradeConditions('entryConditionsContainer');
+    data.exit_trade_conditions  = getTradeConditions('exitConditionsContainer');
     data.buy_strategy = getStrategy('buyStrategyContainer');
     data.sell_strategy = getStrategy('sellStrategyContainer');
     data.exit_strategy = getStrategy('exitStrategyContainer');

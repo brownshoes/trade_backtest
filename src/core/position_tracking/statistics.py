@@ -141,6 +141,9 @@ class Statistics:
         avg_return = mean(returns)
         downside_returns = [r for r in returns if r < 0]
 
+        if len(downside_returns) < 2:
+            return None
+
         if not downside_returns:
             return Decimal('Infinity') if avg_return > 0 else Decimal(0)
 

@@ -1,7 +1,5 @@
 from decimal import Decimal
 from datetime import datetime, timedelta
-import sys
-
 
 from core.position_tracking.open_position import OpenPosition
 from core.position_tracking.trade_data import TradeOverview

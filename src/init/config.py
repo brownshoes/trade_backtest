@@ -82,8 +82,7 @@ class Config:
         self.identify_exit = identify_exit
 
         # === Conditions ===
-        default_entry_trade_conditions = [OnlyOneOpenBuyCondition(), OnlyOneOpenPositionEntryCondition()]
-        self.entry_trade_conditions = entry_trade_conditions + default_entry_trade_conditions
+        self.entry_trade_conditions = entry_trade_conditions
         self.exit_trade_conditions = exit_trade_conditions
 
         # === Buy/Sell ===
@@ -211,54 +210,96 @@ class Config:
 
 
     def __str__(self):
-        return self._stringify_config()
-
-    def _stringify_config(self, indent=0):
-        """
-        Creates a string representation of the configuration, including nested objects.
-        """
-        indent_str = "  " * indent
-        result = [f"{self.__class__.__name__}:"]
+        # --- Time Series Formatting ---
+        main_ts_str = getattr(self.main_time_series, "candle_size_str", str(self.main_time_series))
         
-        for attr, value in self.__dict__.items():
-            if attr.startswith("_"):
-                continue  # Skip private/internal attributes
+        time_series_str = ", ".join(
+            getattr(ts, "candle_size_str", str(ts)) for ts in self.time_series
+        )
 
-            value_str = self._stringify_value(value, indent + 1)
-            result.append(f"{indent_str}  {attr}: {value_str}")
+        exit_time_series_str = ", ".join(
+            getattr(ts, "candle_size_str", str(ts)) for ts in self.exit_time_series
+        )
 
-        return "\n".join(result)
+        # --- Helper: format component with type + field=value ---
+        import inspect
 
-    def _stringify_value(self, value, indent):
-        """
-        Stringify any value depending on type: primitive, object, or list.
-        """
-        indent_str = "  " * indent
+        def format_component_list(lst):
+            formatted = []
 
-        if isinstance(value, (str, int, float, bool, type(None))):
-            return str(value)
+            for comp in lst:
+                if not comp:
+                    continue
 
-        elif isinstance(value, list):
-            if not value:
-                return "[]"
-            list_items = [
-                f"\n{indent_str}- {self._stringify_value(item, indent + 1)}"
-                for item in value
-            ]
-            return "".join(list_items)
+                # Component type
+                comp_type = getattr(comp, "type", comp.__class__.__name__)
 
-        elif hasattr(value, '__dict__'):
-            attrs = {
-                k: v for k, v in value.__dict__.items()
-                if not k.startswith("_") and not inspect.ismethod(v)
-            }
-            if not attrs:
-                return f"{value.__class__.__name__}()"
-            lines = [f"{value.__class__.__name__}:"]
-            for k, v in attrs.items():
-                val_str = self._stringify_value(v, indent + 1)
-                lines.append(f"{indent_str}  {k}: {val_str}")
-            return "\n".join(lines)
+                # Get constructor argument names (skip 'self')
+                try:
+                    sig = inspect.signature(comp.__class__.__init__)
+                    arg_names = [p for p in sig.parameters if p != "self"]
+                except Exception:
+                    arg_names = []
 
-        else:
-            return repr(value)
+                # Build argument=value string
+                args_str_list = []
+                for arg in arg_names:
+                    if hasattr(comp, arg):
+                        val = getattr(comp, arg)
+                        # If the argument is a TimeSeries, show candle_size_str
+                        if hasattr(val, "candle_size_str"):
+                            args_str_list.append(f"{arg}={val.candle_size_str}")
+                        else:
+                            args_str_list.append(f"{arg}={val}")
+                args_str = ", ".join(args_str_list)
+
+                formatted.append(f"{comp_type}({args_str})")
+
+            return ", ".join(formatted)
+
+
+
+        # --- Strategy Components ---
+        indicators_str = format_component_list(self.indicators)
+        identify_entry_str = format_component_list(self.identify_entry)
+        identify_exit_str = format_component_list(self.identify_exit)
+        entry_trade_conditions_str = format_component_list(self.entry_trade_conditions)
+        exit_trade_conditions_str = format_component_list(self.exit_trade_conditions)
+
+        buy_strategy_str = format_component_list([self.buy_strategy]) if self.buy_strategy else "None"
+        sell_strategy_str = format_component_list([self.sell_strategy]) if self.sell_strategy else "None"
+        exit_strategy_str = format_component_list([self.exit_strategy]) if self.exit_strategy else "None"
+
+        return (
+            "=== CONFIGURATION SUMMARY ===\n\n"
+            f"Name:              {self.name}\n"
+            f"Mode:              {self.mode}\n"
+            f"Trade Enabled:     {self.trade}\n"
+            f"Start Time:        {self.start_time}\n"
+            f"End Time:          {self.end_time}\n\n"
+
+            "=== Holdings ===\n"
+            f"USD Holdings:      {self.USD_holdings}\n"
+            f"Coin Holdings:     {self.coin_holdings}\n\n"
+
+            "=== Fees ===\n"
+            f"Maker Fee:         {self.maker_fee}\n"
+            f"Taker Fee:         {self.taker_fee}\n\n"
+
+            "=== Timeframes ===\n"
+            f"Main Time Series:  {main_ts_str}\n"
+            f"Time Series:       {time_series_str}\n"
+            f"Exit Time Series:  {exit_time_series_str}\n\n"
+
+            "=== Strategy Components ===\n"
+            f"Indicators:                {indicators_str}\n"
+            f"Identify Entry:            {identify_entry_str}\n"
+            f"Identify Exit:             {identify_exit_str}\n"
+            f"Entry Trade Conditions:    {entry_trade_conditions_str}\n"
+            f"Exit Trade Conditions:     {exit_trade_conditions_str}\n"
+            f"Buy Strategy:              {buy_strategy_str}\n"
+            f"Sell Strategy:             {sell_strategy_str}\n"
+            f"Exit Strategy:             {exit_strategy_str}\n\n"
+
+            f"CSV Input File:    {self.csv_input_file}\n"
+        )

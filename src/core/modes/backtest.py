@@ -61,9 +61,9 @@ class Backtest:
         for i in range(len(df)):
             '''Treat the current state as the start of the candle. Ex: At 1200, the price is 'X'. Hence use open price'''
             ''' Perform checks on the highs and lows to see if order executed. Then set price at open for candles'''
-            self._perform_checks(opens[i], timestamps[i], "open")
-            self._perform_checks(lows[i], timestamps[i], "low")
-            self._perform_checks(highs[i], timestamps[i], "high")
+            self._perform_checks(opens[i], timestamps[i])
+            self._perform_checks(lows[i], timestamps[i])
+            self._perform_checks(highs[i], timestamps[i])
             self.exg_state.update_current_price_timestamp(opens[i], timestamps[i])
 
             '''
