@@ -1,41 +1,47 @@
-fetch("/ohlc")
-  .then(response => response.json())
-  .then(({ ohlc, sma }) => {
-    console.log("Data loaded:", ohlc.length, "candles, and", sma.length, "SMA points");
+<div id="tvChartContainer" style="width:100%; height:500px;"></div>
 
-    const chart = LightweightCharts.createChart(document.getElementById("chart"), {
-      width: 800,
-      height: 400,
-      layout: { background: { color: '#fff' }, textColor: '#000' },
-      grid: {
-        vertLines: { color: '#e0e0e0' },
-        horzLines: { color: '#e0e0e0' },
-      },
-      timeScale: {
-        timeVisible: true,
-        secondsVisible: true,
-      },
+<script>
+let chart;
+let candleSeries;
+
+function createChart() {
+    const container = document.getElementById('tvChartContainer');
+
+    // Create the chart using LightweightCharts
+    chart = LightweightCharts.createChart(container, {
+        width: container.clientWidth,
+        height: 500,
+        layout: {
+            background: { color: '#ffffff' },
+            textColor: '#222',
+        },
+        grid: {
+            vertLines: { color: '#eee' },
+            horzLines: { color: '#eee' },
+        }
     });
 
-    // OHLC Candlestick
-    const candleSeries = chart.addCandlestickSeries({
-      upColor: '#26a69a',
-      downColor: '#ef5350',
-      borderVisible: false,
-      wickUpColor: '#26a69a',
-      wickDownColor: '#ef5350',
-    });
-    candleSeries.setData(ohlc);
+    // ✅ UPDATED: Use addSeries and specify the type
+    candleSeries = chart.addSeries({ type: 'Candlestick' });
 
-    // SMA Line
-    const smaSeries = chart.addLineSeries({
-      color: '#f39c12',
-      lineWidth: 2,
-    });
-    smaSeries.setData(sma);
+    // Example demo data
+    const data = [
+        { time: '2024-01-01', open: 100, high: 105, low: 98, close: 102 },
+        { time: '2024-01-02', open: 102, high: 108, low: 101, close: 107 },
+        { time: '2024-01-03', open: 107, high: 110, low: 103, close: 104 },
+        { time: '2024-01-04', open: 104, high: 106, low: 99, close: 100 },
+    ];
 
+    candleSeries.setData(data);
+}
+
+// Create chart once
+createChart();
+
+// Resize when chart tab becomes visible
+document.addEventListener("chartTabVisible", () => {
+    const container = document.getElementById("tvChartContainer");
+    chart.applyOptions({ width: container.clientWidth });
     chart.timeScale().fitContent();
-  })
-  .catch(err => {
-    console.error("Error loading chart data:", err);
-  });
+});
+</script>

@@ -16,7 +16,7 @@ class TimeSeries:
         self.candle_size_seconds = self.candle_size * 60 # used for unix timestamp calculations
 
         self.df = None
-        self.candle_list = [] # List of Candle uples
+        self.candle_list = [] # List of Candle tuples
 
         self.candle_buffer = []
         self.last_timestamp = None

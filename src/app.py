@@ -92,6 +92,24 @@ def submit():
         drawdown_data.append(pos_dict.get("drawdown", 0))
         cumulative_pnl_data.append(pos_dict.get("cumulative_profit_and_loss", 0))
 
+    # # Get the time_series that matches the main_time_series declaration
+    # print(config.main_time_series)
+    # chart_time_series = next(
+    #     (ts for ts in config.time_series if ts.candle_size_str == config.main_time_series),
+    #     None
+    # )
+
+    candle_data = [
+    {
+        "time": row["Datetime"],   # Or %Y-%m-%dT%H:%M:%S if intraday
+        "open": float(row["Open"]),
+        "high": float(row["High"]),
+        "low": float(row["Low"]),
+        "close": float(row["Close"]),
+    }
+        for _, row in config.main_time_series.df.iterrows()
+    ]   
+
     # === 3. Render HTML partials ===
     trade_analysis_html = render_template(
         "partials/trade_analysis.html",
@@ -103,16 +121,30 @@ def submit():
         positions=closed_positions
     )
 
+    overview_html = render_template(
+        "partials/overview.html",
+        metrics=metrics
+    )
+
+    chart_html = render_template(
+        "partials/chart.html",
+        candles=candle_data
+    )
+
+
     # === 4. Return JSON payload including chart data ===
     return jsonify({
         "trade_analysis": trade_analysis_html,
         "list_of_trades": list_of_trades_html,
+        "overview": overview_html,     
         "chartLabels": chart_labels,
         "pnlData": pnl_data,
         "runUpData": run_up_data,
         "drawdownData": drawdown_data,
         "cumulativePnLData": cumulative_pnl_data,
-        "metrics": metrics
+        "metrics": metrics,
+        "chart": chart_html,
+        "candles": candle_data
     })
 
 

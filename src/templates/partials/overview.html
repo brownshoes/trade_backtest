@@ -1,14 +1,39 @@
-<div class="overview-section" style="padding:20px;">
-  <h3>Trading Overview</h3>
+<div id="overviewTab" class="tab-pane">
+    <h3 class="section-title">Trading Overview</h3>
 
-  <div class="metrics-summary" style="display:flex; gap:20px; flex-wrap:wrap;">
-    <div><b>Total P&L:</b> {{ metrics.get('total_profit_and_loss', 0) | float | round(2) }}</div>
-    <div><b>Max Drawdown:</b> {{ metrics.get('max_equity_drawdown', 0) | round(2) }}</div>
-    <div><b>Total Trades:</b> {{ metrics.get('total_trades', 0) }}</div>
-    <div><b>Profit Factor:</b> {{ metrics.get('profit_factor', 0) | round(2) }}</div>
-  </div>
+    {% if metrics %}
+    <div class="metrics-summary" style="display:flex; gap:20px; flex-wrap:wrap;">
+        <div>
+            <b>Total P&amp;L:</b>
+            ${{ "%.2f"|format(metrics.total_profit_and_loss) }}
+        </div>
 
-  <div id="chart-container" style="position:relative; width:100%; height:60vh; margin:40px auto;">
-    <canvas id="overviewChart"></canvas>
-  </div>
+        <div>
+            <b>Max Drawdown:</b>
+            ${{ "%.2f"|format(metrics.max_equity_drawdown) }}
+        </div>
+
+        <div>
+            <b>Total Trades:</b>
+            {{ metrics.total_trades }}
+        </div>
+
+        <div>
+            <b>Profit Factor:</b>
+            {% if metrics.profit_factor == 'Infinity' %}
+                ∞
+            {% else %}
+                {{ "%.2f"|format(metrics.profit_factor) }}
+            {% endif %}
+        </div>
+    </div>
+
+    <div id="chart-container"
+         style="position:relative; width:100%; height:60vh; margin:40px auto;">
+        <canvas id="overviewChart"></canvas>
+    </div>
+
+    {% else %}
+        <p class="no-trades">Metrics unavailable.</p>
+    {% endif %}
 </div>

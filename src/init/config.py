@@ -41,8 +41,8 @@ class Config:
 
         # === Timeframes ===
         time_series: list,
-        main_time_series,
-        exit_time_series,
+        main_time_series: str,
+        exit_time_series: list,
 
         # === Strategy Components ===
         indicators: list,

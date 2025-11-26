@@ -1,5 +1,6 @@
 const tabs = document.querySelectorAll('#tabs a');
 const panes = document.querySelectorAll('.tab-pane');
+let tradingViewInitialized = false;
 
 // Helper function to show selected tab
 function showTab(tabName) {
@@ -8,6 +9,17 @@ function showTab(tabName) {
 
     document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
     document.getElementById(`${tabName}Tab`).style.display = 'block';
+
+    // Initialize TradingView chart when chart tab is shown
+    if (tabName === 'chart' && !tradingViewInitialized) {
+        // Small delay to ensure DOM is ready
+        setTimeout(() => {
+            if (typeof initTradingViewChart === 'function') {
+                initTradingViewChart();
+                tradingViewInitialized = true;
+            }
+        }, 100);
+    }
 }
 
 // Load saved tab or default to "load"
@@ -23,4 +35,3 @@ tabs.forEach(tab => {
         localStorage.setItem('activeTab', target);
     });
 });
-
