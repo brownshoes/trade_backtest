@@ -908,6 +908,7 @@ function parseTypedValue(value) {
     return value;
 }
 // ==== Submit ====
+// ==== Submit ====
 document.getElementById('submitBtn').addEventListener('click', async () => {
   const data = collectData();
   console.log("Sending data:", data);
@@ -926,7 +927,7 @@ document.getElementById('submitBtn').addEventListener('click', async () => {
     document.getElementById('list_of_tradesTab').innerHTML = result.list_of_trades;
     document.getElementById('overviewTab').innerHTML = result.overview;
 
-    // Initialize chart immediately
+    // Initialize overview chart
     updateOverviewChart(
       result.chartLabels,
       result.runUpData,
@@ -934,6 +935,16 @@ document.getElementById('submitBtn').addEventListener('click', async () => {
       result.cumulativePnLData
     );
 
+    // Store candle data for the chart (to be loaded when chart tab is opened)
+    if (result.candles && result.candles.length > 0) {
+      console.log('Storing', result.candles.length, 'candles for chart');
+      window.pendingCandleData = result.candles;
+      
+      // If chart is already initialized, update it now
+      if (typeof window.updateTradingViewChart === 'function' && window.chartInitialized) {
+        window.updateTradingViewChart(result.candles);
+      }
+    }
     
   } catch (err) {
     console.error(err);

@@ -68,11 +68,11 @@ def submit():
     backtest_init(config)
 
     trading_state = config.trading_state
-    closed_positions = trading_state.closed_positions  # actual position objects
+    closed_positions = trading_state.closed_positions
 
     # === 2. Compute statistics ===
     statistics = Statistics(trading_state, config.main_time_series.candle_size)
-    metrics = statistics.to_dict()  # dict containing all performance metrics
+    metrics = statistics.to_dict()
 
     # === Prepare chart data arrays ===
     chart_labels = []
@@ -92,23 +92,40 @@ def submit():
         drawdown_data.append(pos_dict.get("drawdown", 0))
         cumulative_pnl_data.append(pos_dict.get("cumulative_profit_and_loss", 0))
 
-    # # Get the time_series that matches the main_time_series declaration
-    # print(config.main_time_series)
-    # chart_time_series = next(
-    #     (ts for ts in config.time_series if ts.candle_size_str == config.main_time_series),
-    #     None
-    # )
+    # Sort dataframe by timestamp
+    df = config.main_time_series.df.sort_values('Timestamp').copy()
 
-    candle_data = [
-    {
-        "time": row["Datetime"],   # Or %Y-%m-%dT%H:%M:%S if intraday
-        "open": float(row["Open"]),
-        "high": float(row["High"]),
-        "low": float(row["Low"]),
-        "close": float(row["Close"]),
-    }
-        for _, row in config.main_time_series.df.iterrows()
-    ]   
+    # Format candle data for TradingView Lightweight Charts
+    candle_data = []
+    for idx, row in df.iterrows():
+        timestamp = row["Timestamp"]
+        open_val = row["Open"]
+        high_val = row["High"]
+        low_val = row["Low"]
+        close_val = row["Close"]
+        
+        # Skip rows with null/NaN values
+        if any(pd.isna(x) for x in [timestamp, open_val, high_val, low_val, close_val]):
+            continue
+        
+        try:
+            candle_data.append({
+                "time": int(timestamp),  # Use the timestamp column directly
+                "open": float(open_val),
+                "high": float(high_val),
+                "low": float(low_val),
+                "close": float(close_val),
+            })
+        except Exception as e:
+            log.warning(f"Error processing row {idx}: {e}")
+            continue
+
+    log.info(f"Generated {len(candle_data)} valid candles for chart")
+    if len(candle_data) > 0:
+        log.info(f"First candle: {candle_data[0]}")
+        log.info(f"Last candle: {candle_data[-1]}")
+
+    log.info(f"Generated {len(candle_data)} valid candles for chart")
 
     # === 3. Render HTML partials ===
     trade_analysis_html = render_template(
@@ -126,12 +143,6 @@ def submit():
         metrics=metrics
     )
 
-    chart_html = render_template(
-        "partials/chart.html",
-        candles=candle_data
-    )
-
-
     # === 4. Return JSON payload including chart data ===
     return jsonify({
         "trade_analysis": trade_analysis_html,
@@ -143,49 +154,7 @@ def submit():
         "drawdownData": drawdown_data,
         "cumulativePnLData": cumulative_pnl_data,
         "metrics": metrics,
-        "chart": chart_html,
         "candles": candle_data
     })
-
-
-
-
-
-
-    # data = request.get_json()
-
-    # # Example: simulate the 'positions' list
-    # positions = [
-    #     {
-    #         "close_datetime": "2025-11-01 14:00",
-    #         "exit_signal": "TP1",
-    #         "close_market_price": 104.25,
-    #         "exit_position_size": 1.0,
-    #         "profit_and_loss": 250.0,
-    #         "profit_and_loss_percent": 5.0,
-    #         "run_up": 300.0,
-    #         "run_up_pct": 6.0,
-    #         "drawdown": -100.0,
-    #         "drawdown_pct": -2.0,
-    #         "cumulative_profit_and_loss": 250.0,
-    #         "open_datetime": "2025-10-30 09:00",
-    #         "entry_signal": "Long",
-    #         "open_market_price": 100.00,
-    #         "quantity": 1.0
-    #     }
-    # ]
-
-    # # Render the "List of Trades" HTML server-side
-    # list_of_trades_html = render_template('partials/list_of_trades.html', positions=positions)
-
-    # # Example placeholders for other tabs:
-    # return jsonify({
-    #     "overview": "<h3>Overview</h3><p>Summary of strategy performance.</p>",
-    #     "performance": "<h3>Performance</h3><p>Profit factor: 1.8</p>",
-    #     "trade_analysis": "<h3>Trade Analysis</h3><p>Sharpe ratio: 1.5</p>",
-    #     "list_of_trades": list_of_trades_html
-    # })
-
-
 if __name__ == '__main__':
     app.run(debug=True)

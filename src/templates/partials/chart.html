@@ -1,13 +1,3 @@
-<div style="margin-bottom: 10px;">
-    <label for="symbolSelect">Symbol: </label>
-    <select id="symbolSelect">
-        <option value="AAPL">AAPL</option>
-        <option value="GOOGL">GOOGL</option>
-        <option value="MSFT">MSFT</option>
-    </select>
-    <button id="loadChartBtn">Load Chart</button>
-</div>
-
 <div id="tradingview_chart" style="height: 600px; width: 100%;"></div>
 
 <script type="text/javascript">
@@ -46,7 +36,7 @@
             },
         });
 
-        // V5 API: Use addSeries with the CandlestickSeries type
+        // Create candlestick series
         try {
             candlestickSeries = chart.addSeries(LightweightCharts.CandlestickSeries, {
                 upColor: '#26a69a',
@@ -56,6 +46,9 @@
                 wickDownColor: '#ef5350',
             });
             console.log('Candlestick series created successfully');
+            
+            // Set flag that chart is initialized
+            window.chartInitialized = true;
         } catch (e) {
             console.error('Error adding candlestick series:', e);
             alert('Error creating chart: ' + e.message);
@@ -73,76 +66,90 @@
 
         resizeObserver.observe(container);
 
-        // Load initial data with dummy data
-        loadChartData('AAPL');
+        // Check if there's pending data from a submit that happened before chart was initialized
+        if (window.pendingCandleData) {
+            console.log('Loading pending candle data:', window.pendingCandleData.length, 'candles');
+            updateTradingViewChart(window.pendingCandleData);
+            delete window.pendingCandleData;
+        }
     }
 
-    function getDummyData(symbol) {
-        // Generate 50 days of dummy candle data
-        const dummyData = [];
-        const basePrice = symbol === 'AAPL' ? 150 : symbol === 'GOOGL' ? 140 : 350;
-        const startDate = new Date('2024-01-01');
+    // Global function to update chart from external data
+    window.updateTradingViewChart = function(candleData) {
+        console.log('updateTradingViewChart called with:', candleData.length, 'candles');
         
-        for (let i = 0; i < 50; i++) {
-            const date = new Date(startDate);
-            date.setDate(date.getDate() + i);
-            
-            // Skip weekends
-            if (date.getDay() === 0 || date.getDay() === 6) continue;
-            
-            // Generate random candle data
-            const open = basePrice + (Math.random() - 0.5) * 10;
-            const close = open + (Math.random() - 0.5) * 5;
-            const high = Math.max(open, close) + Math.random() * 3;
-            const low = Math.min(open, close) - Math.random() * 3;
-            
-            dummyData.push({
-                time: date.toISOString().split('T')[0], // Format: YYYY-MM-DD
-                open: parseFloat(open.toFixed(2)),
-                high: parseFloat(high.toFixed(2)),
-                low: parseFloat(low.toFixed(2)),
-                close: parseFloat(close.toFixed(2))
-            });
+        if (!chart) {
+            console.error('Chart object not initialized! Storing data for later.');
+            window.pendingCandleData = candleData;
+            return;
         }
         
-        return dummyData;
-    }
-
-    function loadChartData(symbol) {
+        if (!candlestickSeries) {
+            console.error('Candlestick series not initialized! Storing data for later.');
+            window.pendingCandleData = candleData;
+            return;
+        }
+        
         try {
-            if (!candlestickSeries) {
-                console.error('Chart not initialized!');
+            // Validate and filter candle data
+            const validCandles = candleData.filter((candle, index) => {
+                // Log first few for debugging
+                if (index < 3) {
+                    console.log(`Candle ${index}:`, candle);
+                }
+                
+                if (!candle.time || 
+                    candle.open == null || 
+                    candle.high == null || 
+                    candle.low == null || 
+                    candle.close == null) {
+                    console.warn('Skipping invalid candle:', candle);
+                    return false;
+                }
+                
+                // Check for valid numbers
+                const open = Number(candle.open);
+                const high = Number(candle.high);
+                const low = Number(candle.low);
+                const close = Number(candle.close);
+                
+                if (isNaN(open) || isNaN(high) || isNaN(low) || isNaN(close)) {
+                    console.warn('Skipping candle with NaN values:', candle);
+                    return false;
+                }
+                
+                // Check logical validity (high >= low, etc.)
+                if (high < low || high < open || high < close || low > open || low > close) {
+                    console.warn('Skipping candle with invalid OHLC logic:', candle);
+                    return false;
+                }
+                
+                return true;
+            }).map(candle => ({
+                time: Number(candle.time),
+                open: Number(candle.open),
+                high: Number(candle.high),
+                low: Number(candle.low),
+                close: Number(candle.close)
+            }));
+            
+            console.log(`Filtered: ${candleData.length} -> ${validCandles.length} valid candles`);
+            
+            if (validCandles.length === 0) {
+                console.error('No valid candle data to display');
+                alert('No valid candle data available');
                 return;
             }
-
-            // Show loading indicator
-            const container = document.getElementById('tradingview_chart');
-            container.style.opacity = '0.5';
-
-            const data = getDummyData(symbol);
-
-            // Update chart with new data
-            candlestickSeries.setData(data);
-
-            // Fit content to view
+            
+            console.log('Sample valid candles:', validCandles.slice(0, 3));
+            
+            candlestickSeries.setData(validCandles);
             chart.timeScale().fitContent();
-
-            // Remove loading indicator
-            container.style.opacity = '1';
-
+            console.log('Chart updated successfully');
         } catch (error) {
-            console.error('Error loading chart data:', error);
-            alert('Failed to load chart data: ' + error.message);
-            document.getElementById('tradingview_chart').style.opacity = '1';
+            console.error('Error updating chart:', error);
+            console.error('Error stack:', error.stack);
+            alert('Failed to update chart: ' + error.message);
         }
-    }
-
-    // Event listener for load button
-    const loadBtn = document.getElementById('loadChartBtn');
-    if (loadBtn) {
-        loadBtn.addEventListener('click', () => {
-            const symbol = document.getElementById('symbolSelect').value;
-            loadChartData(symbol);
-        });
-    }
+    };
 </script>
