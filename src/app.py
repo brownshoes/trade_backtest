@@ -1,3 +1,4 @@
+import traceback
 from flask import Flask, render_template, request, jsonify, render_template_string
 import json
 
@@ -59,102 +60,141 @@ def tab_results():
 
 @app.route("/submit", methods=["POST"])
 def submit():
-    json_data = request.get_json()
-    log.info(f"📦 Received data:\n{json.dumps(json_data, indent=4)}")
+    try:
+        json_data = request.get_json()
+        log.info(f"📦 Received data:\n{json.dumps(json_data, indent=4)}")
 
-    # === 1. Build and run backtest ===
-    config = create_config_from_json(json_data)
-    log.info(config)
-    backtest_init(config)
+        # === 1. Build and run backtest ===
+        config = create_config_from_json(json_data)
+        log.info(config)
+        backtest_init(config)
 
-    trading_state = config.trading_state
-    closed_positions = trading_state.closed_positions
+        trading_state = config.trading_state
+        closed_positions = trading_state.closed_positions
 
-    # === 2. Compute statistics ===
-    statistics = Statistics(trading_state, config.main_time_series.candle_size)
-    metrics = statistics.to_dict()
+        # === 2. Compute statistics ===
+        statistics = Statistics(trading_state, config.main_time_series.candle_size)
+        metrics = statistics.to_dict()
 
-    # === Prepare chart data arrays ===
-    chart_labels = []
-    pnl_data = []
-    run_up_data = []
-    drawdown_data = []
-    cumulative_pnl_data = []
+        # === Prepare chart data arrays ===
+        chart_labels = []
+        pnl_data = []
+        run_up_data = []
+        drawdown_data = []
+        cumulative_pnl_data = []
 
-    for pos in closed_positions:
-        pos_dict = pos.to_dict()
-        close_dt = pos_dict['close_datetime']
-        label = close_dt.strftime("%Y-%m-%d") if not isinstance(close_dt, str) else close_dt.split("T")[0]
-        
-        chart_labels.append(label)
-        pnl_data.append(pos_dict.get("profit_and_loss", 0))
-        run_up_data.append(pos_dict.get("run_up", 0))
-        drawdown_data.append(pos_dict.get("drawdown", 0))
-        cumulative_pnl_data.append(pos_dict.get("cumulative_profit_and_loss", 0))
+        for pos in closed_positions:
+            pos_dict = pos.to_dict()
+            close_dt = pos_dict['close_datetime']
+            label = close_dt.strftime("%Y-%m-%d") if not isinstance(close_dt, str) else close_dt.split("T")[0]
+            
+            chart_labels.append(label)
+            pnl_data.append(pos_dict.get("profit_and_loss", 0))
+            run_up_data.append(pos_dict.get("run_up", 0))
+            drawdown_data.append(pos_dict.get("drawdown", 0))
+            cumulative_pnl_data.append(pos_dict.get("cumulative_profit_and_loss", 0))
 
-    # Sort dataframe by timestamp
-    df = config.main_time_series.df.sort_values('Timestamp').copy()
+        # Sort dataframe by timestamp
+        df = config.main_time_series.df.sort_values('Timestamp').copy()
 
-    # Format candle data for TradingView Lightweight Charts
-    candle_data = []
-    for idx, row in df.iterrows():
-        timestamp = row["Timestamp"]
-        open_val = row["Open"]
-        high_val = row["High"]
-        low_val = row["Low"]
-        close_val = row["Close"]
-        
-        # Skip rows with null/NaN values
-        if any(pd.isna(x) for x in [timestamp, open_val, high_val, low_val, close_val]):
-            continue
-        
-        try:
-            candle_data.append({
-                "time": int(timestamp),  # Use the timestamp column directly
-                "open": float(open_val),
-                "high": float(high_val),
-                "low": float(low_val),
-                "close": float(close_val),
+        # Format candle data for TradingView Lightweight Charts
+        candle_data = []
+        for idx, row in df.iterrows():
+            timestamp = row["Timestamp"]
+            open_val = row["Open"]
+            high_val = row["High"]
+            low_val = row["Low"]
+            close_val = row["Close"]
+            
+            # Skip rows with null/NaN values
+            if any(pd.isna(x) for x in [timestamp, open_val, high_val, low_val, close_val]):
+                continue
+            
+            try:
+                candle_data.append({
+                    "time": int(timestamp),
+                    "open": float(open_val),
+                    "high": float(high_val),
+                    "low": float(low_val),
+                    "close": float(close_val),
+                })
+            except Exception as e:
+                log.warning(f"Error processing row {idx}: {e}")
+                continue
+
+        log.info(f"Generated {len(candle_data)} valid candles for chart")
+
+        # === Prepare trade markers (entry and exit points) ===
+        trade_markers = []
+        for pos in closed_positions:
+            # Entry marker
+            entry_timestamp = int(pos.open_timestamp)
+            entry_price = pos.open_market_price
+            
+            trade_markers.append({
+                "time": entry_timestamp,
+                "position": "belowBar",
+                "color": "#2196F3",
+                "shape": "arrowUp",
+                "text": f"Entry @ {entry_price:.2f}"
             })
-        except Exception as e:
-            log.warning(f"Error processing row {idx}: {e}")
-            continue
+            
+            # Exit marker
+            exit_timestamp = int(pos.close_timestamp)
+            exit_price = pos.close_market_price
+            pnl = pos.profit_and_loss
+            
+            # Color based on profit/loss
+            color = "#4CAF50" if pnl > 0 else "#F44336"
+            
+            trade_markers.append({
+                "time": exit_timestamp,
+                "position": "aboveBar",
+                "color": color,
+                "shape": "arrowDown",
+                "text": f"Exit @ {exit_price:.2f} (PnL: {pnl:.2f})"
+            })
 
-    log.info(f"Generated {len(candle_data)} valid candles for chart")
-    if len(candle_data) > 0:
-        log.info(f"First candle: {candle_data[0]}")
-        log.info(f"Last candle: {candle_data[-1]}")
+        log.info(f"Generated {len(trade_markers)} trade markers")
 
-    log.info(f"Generated {len(candle_data)} valid candles for chart")
+        # === 3. Render HTML partials ===
+        trade_analysis_html = render_template(
+            "partials/trade_analysis.html",
+            metrics=metrics
+        )
 
-    # === 3. Render HTML partials ===
-    trade_analysis_html = render_template(
-        "partials/trade_analysis.html",
-        metrics=metrics
-    )
+        list_of_trades_html = render_template(
+            "partials/list_of_trades.html",
+            positions=closed_positions
+        )
 
-    list_of_trades_html = render_template(
-        "partials/list_of_trades.html",
-        positions=closed_positions
-    )
+        overview_html = render_template(
+            "partials/overview.html",
+            metrics=metrics
+        )
 
-    overview_html = render_template(
-        "partials/overview.html",
-        metrics=metrics
-    )
+        # === 4. Return JSON payload including chart data ===
+        return jsonify({
+            "trade_analysis": trade_analysis_html,
+            "list_of_trades": list_of_trades_html,
+            "overview": overview_html,     
+            "chartLabels": chart_labels,
+            "pnlData": pnl_data,
+            "runUpData": run_up_data,
+            "drawdownData": drawdown_data,
+            "cumulativePnLData": cumulative_pnl_data,
+            "metrics": metrics,
+            "candles": candle_data,
+            "tradeMarkers": trade_markers
+        })
+    
+    except Exception as e:
+        log.error(f"Error in submit route: {str(e)}", exc_info=True)
+        return jsonify({
+            "error": str(e),
+            "traceback": traceback.format_exc()
+        }), 500
+    
 
-    # === 4. Return JSON payload including chart data ===
-    return jsonify({
-        "trade_analysis": trade_analysis_html,
-        "list_of_trades": list_of_trades_html,
-        "overview": overview_html,     
-        "chartLabels": chart_labels,
-        "pnlData": pnl_data,
-        "runUpData": run_up_data,
-        "drawdownData": drawdown_data,
-        "cumulativePnLData": cumulative_pnl_data,
-        "metrics": metrics,
-        "candles": candle_data
-    })
 if __name__ == '__main__':
     app.run(debug=True)

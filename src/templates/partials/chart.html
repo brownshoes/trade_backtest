@@ -69,58 +69,51 @@
         // Check if there's pending data from a submit that happened before chart was initialized
         if (window.pendingCandleData) {
             console.log('Loading pending candle data:', window.pendingCandleData.length, 'candles');
-            updateTradingViewChart(window.pendingCandleData);
+            updateTradingViewChart(window.pendingCandleData, window.pendingTradeMarkers);
             delete window.pendingCandleData;
+            delete window.pendingTradeMarkers;
         }
     }
 
     // Global function to update chart from external data
-    window.updateTradingViewChart = function(candleData) {
-        console.log('updateTradingViewChart called with:', candleData.length, 'candles');
+    window.updateTradingViewChart = function(candleData, tradeMarkers) {
+        console.log('updateTradingViewChart called with:', candleData.length, 'candles and', (tradeMarkers || []).length, 'markers');
         
         if (!chart) {
             console.error('Chart object not initialized! Storing data for later.');
             window.pendingCandleData = candleData;
+            window.pendingTradeMarkers = tradeMarkers;
             return;
         }
         
         if (!candlestickSeries) {
             console.error('Candlestick series not initialized! Storing data for later.');
             window.pendingCandleData = candleData;
+            window.pendingTradeMarkers = tradeMarkers;
             return;
         }
         
         try {
             // Validate and filter candle data
             const validCandles = candleData.filter((candle, index) => {
-                // Log first few for debugging
-                if (index < 3) {
-                    console.log(`Candle ${index}:`, candle);
-                }
-                
                 if (!candle.time || 
                     candle.open == null || 
                     candle.high == null || 
                     candle.low == null || 
                     candle.close == null) {
-                    console.warn('Skipping invalid candle:', candle);
                     return false;
                 }
                 
-                // Check for valid numbers
                 const open = Number(candle.open);
                 const high = Number(candle.high);
                 const low = Number(candle.low);
                 const close = Number(candle.close);
                 
                 if (isNaN(open) || isNaN(high) || isNaN(low) || isNaN(close)) {
-                    console.warn('Skipping candle with NaN values:', candle);
                     return false;
                 }
                 
-                // Check logical validity (high >= low, etc.)
                 if (high < low || high < open || high < close || low > open || low > close) {
-                    console.warn('Skipping candle with invalid OHLC logic:', candle);
                     return false;
                 }
                 
@@ -141,11 +134,19 @@
                 return;
             }
             
-            console.log('Sample valid candles:', validCandles.slice(0, 3));
-            
+            // Set candle data
             candlestickSeries.setData(validCandles);
+            
+            // Add trade markers if provided
+            if (tradeMarkers && tradeMarkers.length > 0) {
+                console.log('Adding', tradeMarkers.length, 'trade markers');
+                
+                // Use createSeriesMarkers to add markers to the candlestick series
+                LightweightCharts.createSeriesMarkers(candlestickSeries, tradeMarkers);
+            }
+            
             chart.timeScale().fitContent();
-            console.log('Chart updated successfully');
+            console.log('Chart updated successfully with candles and markers');
         } catch (error) {
             console.error('Error updating chart:', error);
             console.error('Error stack:', error.stack);

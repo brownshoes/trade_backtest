@@ -908,7 +908,6 @@ function parseTypedValue(value) {
     return value;
 }
 // ==== Submit ====
-// ==== Submit ====
 document.getElementById('submitBtn').addEventListener('click', async () => {
   const data = collectData();
   console.log("Sending data:", data);
@@ -935,14 +934,15 @@ document.getElementById('submitBtn').addEventListener('click', async () => {
       result.cumulativePnLData
     );
 
-    // Store candle data for the chart (to be loaded when chart tab is opened)
+    // Store candle data and markers for the chart
     if (result.candles && result.candles.length > 0) {
       console.log('Storing', result.candles.length, 'candles for chart');
       window.pendingCandleData = result.candles;
+      window.pendingTradeMarkers = result.tradeMarkers || [];
       
       // If chart is already initialized, update it now
       if (typeof window.updateTradingViewChart === 'function' && window.chartInitialized) {
-        window.updateTradingViewChart(result.candles);
+        window.updateTradingViewChart(result.candles, result.tradeMarkers);
       }
     }
     
