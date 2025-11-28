@@ -939,11 +939,17 @@ document.getElementById('submitBtn').addEventListener('click', async () => {
       console.log('Storing', result.candles.length, 'candles for chart');
       window.pendingCandleData = result.candles;
       window.pendingTradeMarkers = result.tradeMarkers || [];
+      window.pendingIndicators = result.indicators || [];
       
       // If chart is already initialized, update it now
       if (typeof window.updateTradingViewChart === 'function' && window.chartInitialized) {
-        window.updateTradingViewChart(result.candles, result.tradeMarkers);
+          window.updateTradingViewChart(
+              result.candles,
+              result.tradeMarkers || [],
+              result.indicators || []    // <-- pass indicators here
+          );
       }
+
     }
     
   } catch (err) {

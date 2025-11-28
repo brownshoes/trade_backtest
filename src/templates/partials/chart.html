@@ -3,6 +3,7 @@
 <script type="text/javascript">
     let chart = null;
     let candlestickSeries = null;
+    let backendIndicatorSeries = {}; // Store backend-calculated indicator series
 
     function initTradingViewChart() {
         // Check if library is loaded
@@ -69,20 +70,113 @@
         // Check if there's pending data from a submit that happened before chart was initialized
         if (window.pendingCandleData) {
             console.log('Loading pending candle data:', window.pendingCandleData.length, 'candles');
-            updateTradingViewChart(window.pendingCandleData, window.pendingTradeMarkers);
+            updateTradingViewChart(
+                window.pendingCandleData, 
+                window.pendingTradeMarkers,
+                window.pendingIndicators
+            );
             delete window.pendingCandleData;
             delete window.pendingTradeMarkers;
+            delete window.pendingIndicators;
         }
     }
 
+    // Add backend-calculated indicators (like Supertrend)
+    function addBackendIndicators(indicators) {
+        if (!indicators || indicators.length === 0) {
+            console.log('No backend indicators to add');
+            return;
+        }
+
+        console.log('Adding', indicators.length, 'backend indicators');
+
+        // Clear existing backend indicators
+        Object.values(backendIndicatorSeries).forEach(series => {
+            if (series) chart.removeSeries(series);
+        });
+        backendIndicatorSeries = {};
+
+        indicators.forEach(indicator => {
+
+            console.log(indicator)
+            try {
+                // Ensure data exists
+                if (!indicator.data) {
+                    console.warn(`Indicator ${indicator.name} has no data`);
+                    return;
+                }
+
+                // Parse data if it's a string
+                if (typeof indicator.data === 'string') {
+                    indicator.data = JSON.parse(indicator.data);
+                }
+
+                const timestamps = indicator.data.Timestamp;
+                const values = indicator.data.values;
+
+                if (!timestamps || !values) {
+                    console.warn(`Indicator ${indicator.name} missing Timestamp or values`);
+                    return;
+                }
+
+                // Convert to arrays if necessary
+                const timestampArray = Array.isArray(timestamps) ? timestamps : Object.values(timestamps);
+                const valueArray = Array.isArray(values) ? values : Object.values(values);
+
+                // Check lengths
+                if (timestampArray.length !== valueArray.length) {
+                    console.warn(`Indicator ${indicator.name} timestamps and values length mismatch`);
+                    return;
+                }
+
+                // Build chart data, skipping invalid values
+                const chartData = [];
+                for (let i = 0; i < timestampArray.length; i++) {
+                    const value = valueArray[i];
+                    if (value != null && !isNaN(value)) {
+                        chartData.push({
+                            time: Number(timestampArray[i]),
+                            value: Number(value)
+                        });
+                    }
+                }
+
+                if (chartData.length === 0) {
+                    console.warn(`No valid data for indicator ${indicator.name}`);
+                    return;
+                }
+
+                // Add line series to chart
+                const style = indicator.style || {};
+                const series = chart.addSeries(LightweightCharts.LineSeries, {
+                    color: style.color || '#2196F3',
+                    lineWidth: style.lineWidth || 2,
+                    title: style.title || indicator.name,
+                    priceLineVisible: false,
+                    lastValueVisible: true
+                });
+
+
+                series.setData(chartData);
+                backendIndicatorSeries[indicator.name] = series;
+
+                console.log(`✓ Added indicator: ${indicator.name} with ${chartData.length} points`);
+            } catch (error) {
+                console.error(`Error adding indicator ${indicator.name}:`, error);
+            }
+        });
+    }
+
+
     // Global function to update chart from external data
-    window.updateTradingViewChart = function(candleData, tradeMarkers) {
-        console.log('updateTradingViewChart called with:', candleData.length, 'candles and', (tradeMarkers || []).length, 'markers');
+    window.updateTradingViewChart = function(candleData, tradeMarkers, indicators) {
+        console.log('updateTradingViewChart called with:', candleData.length, 'candles,', (tradeMarkers || []).length, 'markers, and', (indicators || []).length, 'indicators');
         
         if (!chart) {
             console.error('Chart object not initialized! Storing data for later.');
             window.pendingCandleData = candleData;
             window.pendingTradeMarkers = tradeMarkers;
+            window.pendingIndicators = indicators;
             return;
         }
         
@@ -90,6 +184,7 @@
             console.error('Candlestick series not initialized! Storing data for later.');
             window.pendingCandleData = candleData;
             window.pendingTradeMarkers = tradeMarkers;
+            window.pendingIndicators = indicators;
             return;
         }
         
@@ -136,6 +231,13 @@
             
             // Set candle data
             candlestickSeries.setData(validCandles);
+
+            console.log(indicators)
+            
+            // Add backend indicators (Supertrend, etc.)
+            if (indicators && indicators.length > 0) {
+                addBackendIndicators(indicators);
+            }
             
             // Add trade markers if provided
             if (tradeMarkers && tradeMarkers.length > 0) {
@@ -146,7 +248,7 @@
             }
             
             chart.timeScale().fitContent();
-            console.log('Chart updated successfully with candles and markers');
+            console.log('Chart updated successfully with candles, markers, and indicators');
         } catch (error) {
             console.error('Error updating chart:', error);
             console.error('Error stack:', error.stack);

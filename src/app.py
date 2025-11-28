@@ -157,6 +157,18 @@ def submit():
 
         log.info(f"Generated {len(trade_markers)} trade markers")
 
+        plotting = []
+        for indicator in config.indicators:
+            indicator_plots = indicator.plotting()
+            if indicator_plots:
+                for plot in indicator_plots:
+                    df = plot['data']
+
+                    df['values'] = df['values'].apply(lambda x: None if pd.isna(x) else x)
+                    plot["data"] = df.to_json(orient='columns')
+
+                    plotting.append(plot)
+
         # === 3. Render HTML partials ===
         trade_analysis_html = render_template(
             "partials/trade_analysis.html",
@@ -185,7 +197,8 @@ def submit():
             "cumulativePnLData": cumulative_pnl_data,
             "metrics": metrics,
             "candles": candle_data,
-            "tradeMarkers": trade_markers
+            "tradeMarkers": trade_markers,
+            "indicators": plotting,
         })
     
     except Exception as e:
