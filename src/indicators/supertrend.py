@@ -32,21 +32,75 @@ class Supertrend:
 
         ST_short = pd.DataFrame({
             "Timestamp": self.time_series.df["Timestamp"].values,
-             "values": self.pandas_supertrend["SUPERTs" + self.key].values
+            "values": self.pandas_supertrend["SUPERTs" + self.key].values
         })
 
-        return [
-            {
-                "name": "ST Long",
-                "data": ST_long,
-                "style": {'color': '#FF6B6B', 'lineWidth': 2, 'title': 'ST Long'}
-            },
-            {
-                "name": "ST Short",
-                "data": ST_short,
-                "style": {'color': '#4ECDC4', 'lineWidth': 2, 'title': 'ST Short'}
-            }
-        ]
+        plots = []
+
+        # --- ST Long segments ---
+        for i, segment in enumerate(split_on_nulls(ST_long, "values")):
+            plots.append({
+                "name": f"ST Long {i}",
+                "data": segment,
+                "style": {
+                    "color": "#FF6B6B",
+                    "lineWidth": 2
+                }
+            })
+
+        # --- ST Short segments ---
+        for i, segment in enumerate(split_on_nulls(ST_short, "values")):
+            plots.append({
+                "name": f"ST Short {i}",
+                "data": segment,
+                "style": {
+                    "color": "#4ECDC4",
+                    "lineWidth": 2
+                }
+            })
+
+        return plots
+
+
+    # def plotting(self):
+    #     ST_long = pd.DataFrame({
+    #         "Timestamp": self.time_series.df["Timestamp"].values,
+    #         "values": self.pandas_supertrend["SUPERTl" + self.key].values
+    #     })
+
+    #     ST_short = pd.DataFrame({
+    #         "Timestamp": self.time_series.df["Timestamp"].values,
+    #          "values": self.pandas_supertrend["SUPERTs" + self.key].values
+    #     })
+
+    #     return [
+    #         {
+    #             "name": "ST Long",
+    #             "data": ST_long,
+    #             "style": {'color': '#FF6B6B', 'lineWidth': 2, 'title': 'ST Long'}
+    #         },
+    #         {
+    #             "name": "ST Short",
+    #             "data": ST_short,
+    #             "style": {'color': '#4ECDC4', 'lineWidth': 2, 'title': 'ST Short'}
+    #         }
+    #     ]
 
     def time_period_met(self):
         return self.supertrend_main.time_period_met()
+    
+def split_on_nulls(df, value_col):
+    """
+    Splits a DataFrame into multiple DataFrames
+    whenever a null value appears in value_col.
+    """
+    is_null = df[value_col].isna()
+
+    # Increment segment id whenever we hit a null
+    segment_id = is_null.cumsum()
+
+    segments = []
+    for _, group in df[~is_null].groupby(segment_id):
+        segments.append(group)
+
+    return segments

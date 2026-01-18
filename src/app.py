@@ -94,80 +94,9 @@ def submit():
             drawdown_data.append(pos_dict.get("drawdown", 0))
             cumulative_pnl_data.append(pos_dict.get("cumulative_profit_and_loss", 0))
 
-        # Sort dataframe by timestamp
-        df = config.main_time_series.df.sort_values('Timestamp').copy()
-
-        # Format candle data for TradingView Lightweight Charts
-        candle_data = []
-        for idx, row in df.iterrows():
-            timestamp = row["Timestamp"]
-            open_val = row["Open"]
-            high_val = row["High"]
-            low_val = row["Low"]
-            close_val = row["Close"]
-            
-            # Skip rows with null/NaN values
-            if any(pd.isna(x) for x in [timestamp, open_val, high_val, low_val, close_val]):
-                continue
-            
-            try:
-                candle_data.append({
-                    "time": int(timestamp),
-                    "open": float(open_val),
-                    "high": float(high_val),
-                    "low": float(low_val),
-                    "close": float(close_val),
-                })
-            except Exception as e:
-                log.warning(f"Error processing row {idx}: {e}")
-                continue
-
-        log.info(f"Generated {len(candle_data)} valid candles for chart")
-
-        # === Prepare trade markers (entry and exit points) ===
-        trade_markers = []
-        for pos in closed_positions:
-            # Entry marker
-            entry_timestamp = int(pos.open_timestamp)
-            entry_price = pos.open_market_price
-            
-            trade_markers.append({
-                "time": entry_timestamp,
-                "position": "belowBar",
-                "color": "#2196F3",
-                "shape": "arrowUp",
-                "text": f"Entry @ {entry_price:.2f}"
-            })
-            
-            # Exit marker
-            exit_timestamp = int(pos.close_timestamp)
-            exit_price = pos.close_market_price
-            pnl = pos.profit_and_loss
-            
-            # Color based on profit/loss
-            color = "#4CAF50" if pnl > 0 else "#F44336"
-            
-            trade_markers.append({
-                "time": exit_timestamp,
-                "position": "aboveBar",
-                "color": color,
-                "shape": "arrowDown",
-                "text": f"Exit @ {exit_price:.2f} (PnL: {pnl:.2f})"
-            })
-
-        log.info(f"Generated {len(trade_markers)} trade markers")
-
-        plotting = []
-        for indicator in config.indicators:
-            indicator_plots = indicator.plotting()
-            if indicator_plots:
-                for plot in indicator_plots:
-                    df = plot['data']
-
-                    df['values'] = df['values'].apply(lambda x: None if pd.isna(x) else x)
-                    plot["data"] = df.to_json(orient='columns')
-
-                    plotting.append(plot)
+        candle_data = _format_candle_data(config.main_time_series.df)
+        trade_markers = _build_trade_markers(closed_positions)
+        plotting = _format_plotting(config.indicators)
 
         # === 3. Render HTML partials ===
         trade_analysis_html = render_template(
@@ -208,6 +137,105 @@ def submit():
             "traceback": traceback.format_exc()
         }), 500
     
+
+def _format_candle_data(df):
+    # Format candle data for TradingView Lightweight Charts
+    candle_data = []
+    for idx, row in df.iterrows():
+        timestamp = row["Timestamp"]
+        open_val = row["Open"]
+        high_val = row["High"]
+        low_val = row["Low"]
+        close_val = row["Close"]
+        
+        # Skip rows with null/NaN values
+        if any(pd.isna(x) for x in [timestamp, open_val, high_val, low_val, close_val]):
+            continue
+        
+        try:
+            candle_data.append({
+                "time": int(timestamp),
+                "open": float(open_val),
+                "high": float(high_val),
+                "low": float(low_val),
+                "close": float(close_val),
+            })
+        except Exception as e:
+            log.warning(f"Error processing row {idx}: {e}")
+            continue
+
+    log.info(f"Generated {len(candle_data)} valid candles for chart")
+
+    return candle_data
+
+def _build_trade_markers(closed_positions):
+    # === Prepare trade markers (entry and exit points) ===
+    trade_markers = []
+    for pos in closed_positions:
+        # Entry marker
+        entry_timestamp = int(pos.open_timestamp)
+        entry_price = pos.open_market_price
+        
+        trade_markers.append({
+            "time": entry_timestamp,
+            "position": "belowBar",
+            "color": "#2196F3",
+            "shape": "arrowUp",
+            "text": f"Entry @ {entry_price:.2f}"
+        })
+        
+        # Exit marker
+        exit_timestamp = int(pos.close_timestamp)
+        exit_price = pos.close_market_price
+        pnl = pos.profit_and_loss
+        
+        # Color based on profit/loss
+        color = "#4CAF50" if pnl > 0 else "#F44336"
+        
+        trade_markers.append({
+            "time": exit_timestamp,
+            "position": "aboveBar",
+            "color": color,
+            "shape": "arrowDown",
+            "text": f"Exit @ {exit_price:.2f} (PnL: {pnl:.2f})"
+        })
+
+    log.info(f"Generated {len(trade_markers)} trade markers")
+
+    return trade_markers
+
+def _format_plotting(indicators):
+    plotting = []
+
+    for indicator in indicators:
+        indicator_plots = indicator.plotting()
+        if not indicator_plots:
+            continue
+
+        for plot in indicator_plots:
+            df = plot["data"]
+
+            timestamps = []
+            values = []
+
+            for idx, row in df.iterrows():
+                try:
+                    timestamps.append(int(row["Timestamp"]))
+                    # IMPORTANT: preserve None for JS null handling
+                    val = row["values"]
+                    values.append(None if pd.isna(val) else float(val))
+                except Exception as e:
+                    log.warning(f"Error processing row {idx}: {e}")
+                    continue
+
+            new_plot = plot.copy()
+            new_plot["data"] = {
+                "Timestamp": timestamps,
+                "values": values
+            }
+
+            plotting.append(new_plot)
+    return plotting
 
 if __name__ == '__main__':
     app.run(debug=True)
