@@ -16,7 +16,10 @@ log = setup_logger("Flask", mode="Off")
 
 app = Flask(__name__)
 
-data_store = []
+# data_store = []
+
+LAST_BACKTEST_RESULT = None
+
 
 @app.route('/')
 def index():
@@ -30,36 +33,72 @@ def index():
         sell_strategies_classes=SELL_STRATEGIES_CLASSES,
         exit_strategies_classes=EXIT_STRATEGIES_CLASSES)
 
-@app.route('/create_edit', methods=['GET', 'POST'])
-def create_edit():
-    if request.method == 'POST':
-        data = request.form.to_dict()
-        # Process the submitted config here
-        return jsonify({"success": True, "data": data})
-    return render_template(
-        'create_edit.html'
-    )
+# @app.route('/create_edit', methods=['GET', 'POST'])
+# def create_edit():
+#     log.critical("HERE!!!")
+#     if request.method == 'POST':
+#         data = request.form.to_dict()
+#         # Process the submitted config here
+#         return jsonify({"success": True, "data": data})
+#     return render_template(
+#         'create_edit.html'
+#     )
 
-@app.route('/load')
-def tab_load():
-    return render_template('load.html', data=data_store)
+# @app.route('/load')
+# def tab_load():
+#     log.critical("HERE$$$$")
+#     return render_template('load.html', data=data_store)
 
-@app.route('/create_edit', methods=['GET', 'POST'])
-def tab_create_edit():
-    if request.method == 'POST':
-        item = request.form.get('item')
-        if item:
-            data_store.append(item)
-            return jsonify(success=True)
-        return jsonify(success=False)
-    return render_template('create_edit.html')
+# @app.route('/create_edit', methods=['GET', 'POST'])
+# def tab_create_edit():
+#     log.critical("HERE@@@@")
+#     if request.method == 'POST':
+#         item = request.form.get('item')
+#         if item:
+#             data_store.append(item)
+#             return jsonify(success=True)
+#         return jsonify(success=False)
+#     return render_template('create_edit.html')
 
-@app.route('/results')
-def tab_results():
-    return render_template('results.html', data=data_store)
+# @app.route('/results')
+# def tab_results():
+#     log.critical("HERE****8")
+#     return render_template('results.html', data=data_store)
+
+@app.route("/save", methods=["POST"])
+def save():
+    if LAST_BACKTEST_RESULT is None:
+        return jsonify({
+            "error": "No backtest result available. Call /submit first."
+        }), 400
+
+    try:
+        result = LAST_BACKTEST_RESULT
+
+        # Later processing goes here
+        config = result["config"]
+        metrics = result["metrics"]
+        closed_positions = result["closed_positions"]
+
+        log.info("Processing cached backtest result")
+        log.info(metrics)
+
+        return jsonify({
+            "status": "processed"
+        }), 200
+
+    except Exception as e:
+        log.error("Error in save route", exc_info=True)
+        return jsonify({
+            "error": str(e)
+        }), 500
+
+
 
 @app.route("/submit", methods=["POST"])
 def submit():
+    global LAST_BACKTEST_RESULT
+
     try:
         json_data = request.get_json()
         log.info(f"📦 Received data:\n{json.dumps(json_data, indent=4)}")
@@ -94,11 +133,26 @@ def submit():
             drawdown_data.append(pos_dict.get("drawdown", 0))
             cumulative_pnl_data.append(pos_dict.get("cumulative_profit_and_loss", 0))
 
+        # === 3. Store everything globally ===
+        LAST_BACKTEST_RESULT = {
+            "config": config,           
+            "metrics": metrics,
+            "chart_data": {
+                "labels": chart_labels,
+                "pnl": pnl_data,
+                "run_up": run_up_data,
+                "drawdown": drawdown_data,
+                "cumulative_pnl": cumulative_pnl_data,
+            },
+            "closed_positions": closed_positions,
+        }
+
+        # === 4. Store everything globally ===
         candle_data = _format_candle_data(config.main_time_series.df)
         trade_markers = _build_trade_markers(closed_positions)
         plotting = _format_plotting(config.indicators)
 
-        # === 3. Render HTML partials ===
+        # === 5. Render HTML partials ===
         trade_analysis_html = render_template(
             "partials/trade_analysis.html",
             metrics=metrics
@@ -114,7 +168,7 @@ def submit():
             metrics=metrics
         )
 
-        # === 4. Return JSON payload including chart data ===
+        # === 6. Return JSON payload including chart data ===
         return jsonify({
             "trade_analysis": trade_analysis_html,
             "list_of_trades": list_of_trades_html,

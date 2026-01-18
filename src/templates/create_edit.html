@@ -13,15 +13,32 @@
   Toggle Dark Mode
 </button>
 
-<div class="section-row" style="text-align:center;">
-  <label for="jsonFileInput" style="font-weight:bold; margin-right:10px;">Upload JSON File:</label>
+<div class="section-row" style="text-align:center; align-items: center; display: flex; justify-content: center; gap: 10px;">
+  <!-- Upload JSON -->
+  <label for="jsonFileInput" style="font-weight:bold;">Upload JSON File:</label>
   <input type="file" id="jsonFileInput" accept=".json">
+
+  <!-- Submit Button -->
+  <button
+      id="submitBtn"
+      type="button"
+      class="btn btn-primary"
+  >
+      Submit
+  </button>
+
+  <!-- Save Button -->
+  <button
+      id="saveBtn"
+      type="button"
+      class="btn btn-primary"
+  >
+      Save
+  </button>
 </div>
 
-<!-- === Submit === -->
-<div class="section-row" style="text-align:center;">
-  <button type="button" id="submitBtn">Submit to Flask</button>
-</div>
+
+
 
 <!-- === General Config === -->
 <div class="section-row">
@@ -258,6 +275,30 @@
 
 </body>
 </html>
+
+<script>
+document.getElementById("saveBtn").addEventListener("click", async () => {
+    try {
+        const response = await fetch("/save", {
+            method: "POST"
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            alert(data.error || "Save failed");
+            return;
+        }
+
+        alert("Saved successfully");
+
+    } catch (err) {
+        console.error(err);
+        alert("Save request failed");
+    }
+});
+</script>
+
 
 
 <script>
