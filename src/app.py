@@ -12,7 +12,7 @@ from configs.create_config import create_config_from_json
 from core.position_tracking.statistics import Statistics
 
 from database.db_config_results_model import ConfigResult
-from database.db_config_results_access import create_entry
+from database.db_config_results_access import create_entry, get_all_entries
 
 from log.logger import setup_logger
 log = setup_logger("Flask", mode="Off")
@@ -40,8 +40,27 @@ def index():
         sell_strategies_classes=SELL_STRATEGIES_CLASSES,
         exit_strategies_classes=EXIT_STRATEGIES_CLASSES)
 
+@app.route("/config-results", methods=["GET"])
+def fetch_config_results():
+    log.critical("fetch_config_results")
+    try:
+        rows = get_all_entries()  # returns list of ConfigResult objects
 
-@app.route("/save", methods=["POST"])
+        # Convert each row to a dict for JSON
+        results = [row.to_json() if isinstance(row.to_json(), dict) else row.to_json() for row in rows]
+
+        # If to_json() returns JSON string, parse it
+        import json
+        for i, r in enumerate(results):
+            if isinstance(r, str):
+                results[i] = json.loads(r)
+
+        return jsonify(results), 200
+
+    except Exception as e:
+        app.logger.error("Failed to fetch config results: %s", e)
+        return jsonify({"error": "Failed to fetch results"}), 500
+
 @app.route("/save", methods=["POST"])
 def save():
     if LAST_BACKTEST_RESULT is None:

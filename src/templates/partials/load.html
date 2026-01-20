@@ -1,0 +1,83 @@
+<div id="resultsContainer">
+    <button id="refreshResultsBtn" style="margin-bottom:10px;">Refresh Results</button>
+
+    <div class="table-wrapper">
+        <table id="resultsTable" class="trades-table">
+            <thead>
+                <tr>
+                    <th>JSON File</th>
+                    <th>Start Time</th>
+                    <th>End Time</th>
+                    <th>Total PnL</th>
+                    <th>Total PnL %</th>
+                    <th>Max Drawdown</th>
+                    <th>Total Trades</th>
+                    <th>Profit Factor</th>
+                    <th>% Profitable</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Rows inserted dynamically -->
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+async function loadResultsTable() {
+    console.log("Loading results table...");
+    try {
+        const response = await fetch("/config-results");
+        console.log("Fetch response:", response);
+
+        if (!response.ok) throw new Error("Failed to fetch results");
+        const data = await response.json();
+        console.log("Data received:", data);
+
+        const tbody = document.querySelector("#resultsTable tbody");
+        tbody.innerHTML = "";
+
+        if (data.length === 0) {
+            const tr = document.createElement("tr");
+            tr.innerHTML = `<td colspan="9" class="no-trades">No results found.</td>`;
+            tbody.appendChild(tr);
+            return;
+        }
+
+        data.forEach(row => {
+            const tr = document.createElement("tr");
+
+            // Apply profit/loss coloring for total_pnl
+            const pnlClass = row.total_pnl >= 0 ? "profit" : "loss";
+
+            tr.innerHTML = `
+                <td>${row.json_file_name}</td>
+                <td>${row.start_time}</td>
+                <td>${row.end_time}</td>
+                <td class="${pnlClass}">${parseFloat(row.total_pnl).toFixed(2)}</td>
+                <td class="${pnlClass}">${parseFloat(row.total_pnl_percent).toFixed(2)}%</td>
+                <td>${parseFloat(row.max_drawdown).toFixed(2)}</td>
+                <td>${row.total_trades}</td>
+                <td>${parseFloat(row.profit_factor).toFixed(2)}</td>
+                <td>${parseFloat(row.percent_profitable).toFixed(2)}%</td>
+            `;
+            tbody.appendChild(tr);
+        });
+
+    } catch (err) {
+        console.error("Failed to load results:", err);
+        const tbody = document.querySelector("#resultsTable tbody");
+        tbody.innerHTML = `<tr><td colspan="9" class="no-trades">Error loading results</td></tr>`;
+    }
+}
+
+// Load on page start
+document.addEventListener("DOMContentLoaded", () => {
+    if (document.querySelector("#resultsTable")) {
+        loadResultsTable();
+
+        const refreshBtn = document.getElementById("refreshResultsBtn");
+        if (refreshBtn) refreshBtn.addEventListener("click", loadResultsTable);
+    }
+});
+</script>
