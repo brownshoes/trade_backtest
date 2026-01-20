@@ -1,6 +1,7 @@
 import traceback
 from flask import Flask, render_template, request, jsonify, render_template_string
 import json
+import os
 
 import pandas as pd
 
@@ -72,8 +73,22 @@ def save():
         result = LAST_BACKTEST_RESULT
 
         config = result["config"]
-        metrics = result["metrics"]  # <-- dict
+        json_data = result["json_data"]
+        metrics = result["metrics"]
 
+        #=== Save to Directory ===
+        # Ensure directory exists
+        save_dir = "configs"
+        os.makedirs(save_dir, exist_ok=True)
+
+        # Save JSON file
+        json_file_path = os.path.join(save_dir, f"{config.name}.json")
+        with open(json_file_path, "w", encoding="utf-8") as f:
+            json.dump(json_data, f, indent=4)
+
+        log.info("Saved JSON data to disk: %s", json_file_path)
+
+        #=== Save to Database ===
         config_result = ConfigResult(
             json_file_name=config.name,
             start_time=config.start_time,
@@ -149,7 +164,8 @@ def submit():
 
         # === 3. Store everything globally ===
         LAST_BACKTEST_RESULT = {
-            "config": config,           
+            "config": config,
+            "json_data": json_data,     
             "metrics": metrics,
             "chart_data": {
                 "labels": chart_labels,
