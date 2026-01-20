@@ -11,8 +11,15 @@ from init.initalization import backtest_init
 from configs.create_config import create_config_from_json
 from core.position_tracking.statistics import Statistics
 
+from database.db_config_results_model import ConfigResult
+from database.db_config_results_access import create_entry
+
 from log.logger import setup_logger
 log = setup_logger("Flask", mode="Off")
+
+# Create DB and tables on startup
+from database.db_setup import init_db
+init_db()
 
 app = Flask(__name__)
 
@@ -33,38 +40,8 @@ def index():
         sell_strategies_classes=SELL_STRATEGIES_CLASSES,
         exit_strategies_classes=EXIT_STRATEGIES_CLASSES)
 
-# @app.route('/create_edit', methods=['GET', 'POST'])
-# def create_edit():
-#     log.critical("HERE!!!")
-#     if request.method == 'POST':
-#         data = request.form.to_dict()
-#         # Process the submitted config here
-#         return jsonify({"success": True, "data": data})
-#     return render_template(
-#         'create_edit.html'
-#     )
 
-# @app.route('/load')
-# def tab_load():
-#     log.critical("HERE$$$$")
-#     return render_template('load.html', data=data_store)
-
-# @app.route('/create_edit', methods=['GET', 'POST'])
-# def tab_create_edit():
-#     log.critical("HERE@@@@")
-#     if request.method == 'POST':
-#         item = request.form.get('item')
-#         if item:
-#             data_store.append(item)
-#             return jsonify(success=True)
-#         return jsonify(success=False)
-#     return render_template('create_edit.html')
-
-# @app.route('/results')
-# def tab_results():
-#     log.critical("HERE****8")
-#     return render_template('results.html', data=data_store)
-
+@app.route("/save", methods=["POST"])
 @app.route("/save", methods=["POST"])
 def save():
     if LAST_BACKTEST_RESULT is None:
@@ -75,16 +52,36 @@ def save():
     try:
         result = LAST_BACKTEST_RESULT
 
-        # Later processing goes here
         config = result["config"]
-        metrics = result["metrics"]
-        closed_positions = result["closed_positions"]
+        metrics = result["metrics"]  # <-- dict
 
-        log.info("Processing cached backtest result")
-        log.info(metrics)
+        config_result = ConfigResult(
+            json_file_name=config.name,
+            start_time=config.start_time,
+            end_time=config.end_time,
+
+            total_pnl=float(metrics["total_profit_and_loss"]),
+            total_pnl_percent=float(metrics["total_profit_and_loss_percent"]),
+            max_drawdown=float(metrics["max_equity_drawdown"]),
+            total_trades=int(metrics["total_trades"]),
+            profit_factor=float(metrics["profit_factor"]),
+            percent_profitable=float(metrics["percent_profitable"]),
+        )
+
+        log.info("Saving backtest result to database: %s", config.name)
+
+        success, error_msg = create_entry(config_result)
+
+        if not success:
+            return jsonify({
+                "status": "error",
+                "message": error_msg
+            }), 409
+
 
         return jsonify({
-            "status": "processed"
+            "status": "saved",
+            "json_file_name": config.name
         }), 200
 
     except Exception as e:
@@ -92,8 +89,6 @@ def save():
         return jsonify({
             "error": str(e)
         }), 500
-
-
 
 @app.route("/submit", methods=["POST"])
 def submit():

@@ -8,6 +8,5 @@ Base = declarative_base()
 
 def init_db():
     # Import all models here
-    # import database.models.json_record
-    # import database.models.data_provenance_rec
+    import database.db_config_results_model
     Base.metadata.create_all(bind=engine)

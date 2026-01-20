@@ -286,11 +286,11 @@ document.getElementById("saveBtn").addEventListener("click", async () => {
         const data = await response.json();
 
         if (!response.ok) {
-            alert(data.error || "Save failed");
+            alert(data.message || "Save failed");
             return;
         }
 
-        alert("Saved successfully");
+        alert(data.message || "Saved successfully");
 
     } catch (err) {
         console.error(err);
@@ -298,6 +298,7 @@ document.getElementById("saveBtn").addEventListener("click", async () => {
     }
 });
 </script>
+
 
 
 
