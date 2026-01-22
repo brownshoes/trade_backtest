@@ -55,7 +55,7 @@ def setup_logger(file_name, mode="On"):
     # Disable logging output if mode is OFF
     if mode.lower() == "off":
         file_handler.setLevel(logging.CRITICAL)
-        console_handler.setLevel(logging.CRITICAL)
+        console_handler.setLevel(logging.ERROR)
 
     # Format string for both handlers
     log_format = '%(asctime)s - %(levelname)s - [%(filename)s:%(funcName)s:%(lineno)d] - %(message)s'

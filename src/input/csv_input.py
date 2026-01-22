@@ -1,15 +1,18 @@
 import pandas as pd
 from datetime import datetime, timedelta
 
+from decorators.timeit import timeit
+
 from utils.time_conversion import START_END_TIME_FORMAT
 
 import logging
 from log.logger import LOGGER_NAME
 logger = logging.getLogger(LOGGER_NAME)
 
-def intake_csv_data(csv_file: str, start_time: str, end_time: str) -> tuple[pd.DataFrame, list[dict]]:
+@timeit
+def read_csv_file(csv_file: str) -> pd.DataFrame:
     try:
-        df = pd.read_csv(csv_file)
+        return pd.read_csv(csv_file)
     except FileNotFoundError:
         logger.error(f"CSV file not found: {csv_file}")
         raise
@@ -17,7 +20,8 @@ def intake_csv_data(csv_file: str, start_time: str, end_time: str) -> tuple[pd.D
         logger.error(f"Failed to read CSV: {e}")
         raise
 
-
+@timeit
+def parse_csv_data(df: pd.DataFrame, start_time: str, end_time: str) -> tuple[pd.DataFrame, list[dict]]:
     start_unix = datetime.strptime(start_time, START_END_TIME_FORMAT).timestamp()
     end_unix = datetime.strptime(end_time, START_END_TIME_FORMAT).timestamp()
 

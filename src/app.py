@@ -24,8 +24,6 @@ init_db()
 
 app = Flask(__name__)
 
-# data_store = []
-
 LAST_BACKTEST_RESULT = None
 
 

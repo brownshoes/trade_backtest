@@ -6,7 +6,7 @@ from init.config import Config
 
 from core.modes.backtest import Backtest
 
-from input.csv_input import intake_csv_data, get_buffered_start_time
+from input.csv_input import read_csv_file, parse_csv_data, get_buffered_start_time
 from utils.candle import Candle
 
 from decorators.timeit import timeit
@@ -18,6 +18,8 @@ from log.logger import LOGGER_NAME, setup_logger
 logger = logging.getLogger(LOGGER_NAME)
 
 import jsonpickle
+
+import pandas as pd
 
 from configs.create_config import create_config_from_json, config_to_json
 
@@ -50,6 +52,52 @@ def dict_to_candle(d: dict) -> Candle:
         d["Datetime"], d["Timestamp"], d["Open"], d["High"], d["Low"], d["Close"], d["Volume"]
     )
 
+
+csv_cache = {
+    "file_name": None,
+    "df": None,
+}
+
+def load_csv_file(csv_file: str) -> pd.DataFrame:
+    """
+    Pure CSV reading from disk.
+    Caches the DataFrame if the file name matches.
+    """
+    if csv_cache.get("file_name") == csv_file and csv_cache.get("df") is not None:
+        logger.critical(f"📄 Reusing cached CSV: {csv_file}")
+        return csv_cache["df"]
+
+    logger.info(f"📄 Reading CSV from disk: {csv_file}")
+    df = read_csv_file(csv_file)  # your original I/O function
+    csv_cache["file_name"] = csv_file
+    csv_cache["df"] = df
+    return df
+
+def filter_csv_by_time(df: pd.DataFrame, start_time: str, end_time: str) -> tuple[pd.DataFrame, list[dict]]:
+    """
+    Filters the given DataFrame by start and end time and converts it to a list of dicts.
+    """
+    return parse_csv_data(df, start_time, end_time)
+
+
+@timeit
+def load_csv(config: Config):
+    """
+    Load CSV for backtesting:
+    1. Use cached CSV if available
+    2. Determine buffered start time
+    3. Parse/filter CSV
+    """
+    if config.mode != "BACKTEST":
+        return None, None
+
+    df_csv = load_csv_file(config.csv_input_file)
+    buffered_start_time = get_buffered_start_time(config.start_time, config.time_series)
+    logger.info(f"Buffered start time: {buffered_start_time}")
+
+    df, list_of_dict = filter_csv_by_time(df_csv, buffered_start_time, config.end_time)
+    return df, list_of_dict
+
 @timeit
 def init_backtest_time_series(config: Config, list_of_dict: list):
     """
@@ -65,16 +113,6 @@ def init_backtest_time_series(config: Config, list_of_dict: list):
         time_series.create_dataframe()
         logger.info(time_series.df)
 
-@timeit
-def load_csv(config: Config):
-    """
-    Load historical data for backtesting based on buffered start time.
-    """
-    if config.mode == "BACKTEST":
-        buffered_start_time = get_buffered_start_time(config.start_time, config.time_series)
-        logger.info(f"Buffered start time: {buffered_start_time}")
-        df, list_of_dict = intake_csv_data(config.csv_input_file, buffered_start_time, config.end_time)
-        return df, list_of_dict
     
 @timeit
 def backtest_init(config: Config):
