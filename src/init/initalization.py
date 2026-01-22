@@ -58,6 +58,15 @@ csv_cache = {
     "df": None,
 }
 
+# Cache for filtered CSV results
+_filter_cache = {
+    "csv_file": None,
+    "start_time": None,
+    "end_time": None,
+    "df_filtered": None,
+    "row_dicts": None,
+}
+
 def load_csv_file(csv_file: str) -> pd.DataFrame:
     """
     Pure CSV reading from disk.
@@ -73,11 +82,35 @@ def load_csv_file(csv_file: str) -> pd.DataFrame:
     csv_cache["df"] = df
     return df
 
-def filter_csv_by_time(df: pd.DataFrame, start_time: str, end_time: str) -> tuple[pd.DataFrame, list[dict]]:
+def filter_csv_by_time(df: pd.DataFrame, start_time: str, end_time: str, csv_file: str) -> tuple[pd.DataFrame, list[dict]]:
     """
     Filters the given DataFrame by start and end time and converts it to a list of dicts.
+    Uses a cache keyed by CSV file name and time range.
+    Since the start time is based on the buffered start time, changes in the candle size will result 
+    in a new start_time.
     """
-    return parse_csv_data(df, start_time, end_time)
+    # Check if cached result exists
+    if (
+        _filter_cache.get("csv_file") == csv_file and
+        _filter_cache.get("start_time") == start_time and
+        _filter_cache.get("end_time") == end_time
+    ):
+        logger.critical(f"📄 Reusing cached filtered CSV for {csv_file}")
+        return _filter_cache["df_filtered"], _filter_cache["row_dicts"]
+
+    # Filter using parse_csv_data
+    df_filtered, row_dicts = parse_csv_data(df, start_time, end_time)
+
+    # Update cache
+    _filter_cache.update({
+        "csv_file": csv_file,
+        "start_time": start_time,
+        "end_time": end_time,
+        "df_filtered": df_filtered,
+        "row_dicts": row_dicts,
+    })
+
+    return df_filtered, row_dicts
 
 
 @timeit
@@ -95,7 +128,7 @@ def load_csv(config: Config):
     buffered_start_time = get_buffered_start_time(config.start_time, config.time_series)
     logger.info(f"Buffered start time: {buffered_start_time}")
 
-    df, list_of_dict = filter_csv_by_time(df_csv, buffered_start_time, config.end_time)
+    df, list_of_dict = filter_csv_by_time(df_csv, buffered_start_time, config.end_time, config.csv_input_file)
     return df, list_of_dict
 
 @timeit
