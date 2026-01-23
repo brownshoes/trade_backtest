@@ -15,12 +15,18 @@ from core.position_tracking.statistics import Statistics
 from database.db_config_results_model import ConfigResult
 from database.db_config_results_access import create_entry, get_all_entries
 
+from init.initalization import load_csv_file
+
 from log.logger import setup_logger
 log = setup_logger("Flask", mode="Off")
 
 # Create DB and tables on startup
 from database.db_setup import init_db
 init_db()
+
+# Load a default csv on start
+DEFAULT_CSV_FILE = 'csv\csv_backtest\short_btc.csv'
+load_csv_file(DEFAULT_CSV_FILE)
 
 app = Flask(__name__)
 
