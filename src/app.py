@@ -25,7 +25,7 @@ from database.db_setup import init_db
 init_db()
 
 # Load a default csv on start
-DEFAULT_CSV_FILE = 'csv\csv_backtest\short_btc.csv'
+DEFAULT_CSV_FILE = 'csv\csv_backtest\processed_btc_full.csv'
 load_csv_file(DEFAULT_CSV_FILE)
 
 app = Flask(__name__)

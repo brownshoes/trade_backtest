@@ -5,6 +5,7 @@ import json
 # === Indicators ===
 from indicators.simple_moving_average import SimpleMovingAverage
 from indicators.supertrend import Supertrend
+from indicators.supertrendMA import SupertrendMA
 
 # === Identify Entry ===
 from customization.identify.entry.supertrend_ma import SupertrendMAEntry
@@ -12,7 +13,7 @@ from customization.identify.entry.supertrend import SupertrendEntry
 from customization.identify.entry.time_interval import TimeIntervalEntry
 
 # === Identify Exit ===
-from customization.identify.exit.supertrend_ma import SupertrendMAIdentifyExit
+from customization.identify.exit.supertrend_ma import SupertrendMAExit
 from customization.identify.exit.supertrend import SupertrendExit
 
 # === Entry Conditions ===
@@ -34,6 +35,7 @@ from customization.buy_sell_strategies.exit_strategies import LimitExitPercentAb
 CLASS_MAP = {
     # === Indicators ===
     "Supertrend": Supertrend,
+    "SupertrendMA": SupertrendMA,
     "SimpleMovingAverage": SimpleMovingAverage,
 
     # === Identify Entry ===
@@ -43,7 +45,7 @@ CLASS_MAP = {
 
     # === Identify Exit ===
     "SupertrendExit": SupertrendExit,
-    "SupertrendMAIdentifyExit": SupertrendMAIdentifyExit,
+    "SupertrendMAExit": SupertrendMAExit,
 
     # === Entry Conditions ===
     "NoEntryCondition": NoEntryCondition,

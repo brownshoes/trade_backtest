@@ -44,13 +44,29 @@ def load_config(config_module_name: str) -> Config:
     except (ModuleNotFoundError, AttributeError) as e:
         raise ImportError(f"Could not load config from {config_module_name}: {e}")
 
+# def dict_to_candle(d: dict) -> Candle:
+#     """
+#     Convert a dictionary representing a candle to a Candle object.
+#     """
+#     return Candle(
+#         d["Datetime"], d["Timestamp"], d["Open"], d["High"], d["Low"], d["Close"], d["Volume"]
+#     )
+
+
 def dict_to_candle(d: dict) -> Candle:
     """
     Convert a dictionary representing a candle to a Candle object.
     """
     return Candle(
-        d["Datetime"], d["Timestamp"], d["Open"], d["High"], d["Low"], d["Close"], d["Volume"]
+        d["Datetime"],
+        int(d["Timestamp"]),      # 👈 CRITICAL FIX
+        float(d["Open"]),
+        float(d["High"]),
+        float(d["Low"]),
+        float(d["Close"]),
+        float(d["Volume"]),
     )
+
 
 
 csv_cache = {

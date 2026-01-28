@@ -2,7 +2,7 @@ import logging
 from log.logger import LOGGER_NAME
 logger = logging.getLogger(LOGGER_NAME)
 
-class SupertrendMAIdentifyExit:
+class SupertrendMAExit:
     """Exit identified when long ends / short begins for SupertrendMA indicator."""
 
     def __init__(self, supertrendMA):

@@ -2,12 +2,14 @@
 # The empty [] is REQUIRED
 IDENTIFY_ENTRY_CLASSES = {
     "SupertrendEntry": [],
+    "SupertrendMAEntry": [],
     "MACDEntry": [],
     "RSIEntry": []
 }
 
 IDENTIFY_EXIT_CLASSES = {
     "SupertrendExit": [],
+    "SupertrendMAExit": [],
     "MACDExit": [],
     "RSIExit": []
 }
