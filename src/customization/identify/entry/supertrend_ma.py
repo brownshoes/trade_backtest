@@ -19,10 +19,10 @@ class SupertrendMAEntry:
         current = self.supertrendMA.supertrend_ma_direction.get_index(index)
 
         # Debug
-        main = self.supertrendMA.supertrend_ma_main.get_index(index)
-        long = self.supertrendMA.supertrend_ma_long.get_index(index)
-        short = self.supertrendMA.supertrend_ma_short.get_index(index)
+        # main = self.supertrendMA.supertrend_ma_main.get_index(index)
+        # long = self.supertrendMA.supertrend_ma_long.get_index(index)
+        # short = self.supertrendMA.supertrend_ma_short.get_index(index)
 
-        logger.debug(f"Main: {main} Direction: {current} Long: {long} Short: {short}")
+        # logger.debug(f"Main: {main} Direction: {current} Long: {long} Short: {short}")
 
         return last == -1 and current == 1

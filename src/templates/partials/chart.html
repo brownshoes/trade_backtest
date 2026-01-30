@@ -4,6 +4,27 @@
     let chart = null;
     let candlestickSeries = null;
     let backendIndicatorSeries = {}; // Store backend-calculated indicator series
+    let markerPlugin = null; 
+
+    function clearTradingViewChart() {
+        if (!chart) return;
+
+        if (candlestickSeries) {
+            candlestickSeries.setData([]);
+            // Clear markers via the plugin reference
+            if (markerPlugin) {
+                markerPlugin.setMarkers([]);
+            }
+        }
+
+        // Clear backend indicators
+        Object.values(backendIndicatorSeries).forEach(series => {
+            if (series) chart.removeSeries(series);
+        });
+        backendIndicatorSeries = {};
+
+        console.log('Chart and Markers cleared.');
+    }
 
     function initTradingViewChart() {
         // Check if library is loaded
@@ -192,10 +213,16 @@
             
             // Add trade markers if provided
             if (tradeMarkers && tradeMarkers.length > 0) {
-                console.log('Adding', tradeMarkers.length, 'trade markers');
-                
-                // Use createSeriesMarkers to add markers to the candlestick series
-                LightweightCharts.createSeriesMarkers(candlestickSeries, tradeMarkers);
+                if (!markerPlugin) {
+                    // Create the plugin for the first time
+                    markerPlugin = LightweightCharts.createSeriesMarkers(candlestickSeries, tradeMarkers);
+                } else {
+                    // Update existing plugin with new data (this clears the old ones)
+                    markerPlugin.setMarkers(tradeMarkers);
+                }
+            } else if (markerPlugin) {
+                // If no new markers, clear the existing ones
+                markerPlugin.setMarkers([]);
             }
             
             chart.timeScale().fitContent();

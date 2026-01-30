@@ -978,6 +978,10 @@ document.getElementById('submitBtn').addEventListener('click', async () => {
       window.pendingCandleData = result.candles;
       window.pendingTradeMarkers = result.tradeMarkers || [];
       window.pendingIndicators = result.indicators || [];
+
+      if (window.chartInitialized && typeof clearTradingViewChart === 'function') {
+          clearTradingViewChart(); // Call the fixed function
+      }
       
       // If chart is already initialized, update it now
       if (typeof window.updateTradingViewChart === 'function' && window.chartInitialized) {

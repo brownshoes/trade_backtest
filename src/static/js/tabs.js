@@ -14,6 +14,11 @@ function showTab(tabName) {
     if (tabName === 'chart' && !tradingViewInitialized) {
         // Small delay to ensure DOM is ready
         setTimeout(() => {
+            if (typeof clearTradingViewChart === 'function') {
+                clearTradingViewChart();
+            }
+
+
             if (typeof initTradingViewChart === 'function') {
                 initTradingViewChart();
                 tradingViewInitialized = true;
