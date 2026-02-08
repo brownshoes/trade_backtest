@@ -112,7 +112,7 @@ class Config:
 
         self.trading_state = TradingState()
         self.client = self.init_client(self.mode)
-        self.limit_adjust = LimitAdjust()
+        self.limit_adjust = LimitAdjust(self.mode)
 
         # === Trading System Setup ===
         self.strategy = Strategy(

@@ -18,7 +18,7 @@ from database.db_config_results_access import create_entry, get_all_entries
 from init.initalization import load_csv_file
 
 from log.logger import setup_logger
-log = setup_logger("Flask", mode="Off")
+log = setup_logger("Flask", mode="On")
 
 # Create DB and tables on startup
 from database.db_setup import init_db
@@ -154,6 +154,8 @@ def submit():
         run_up_data = []
         drawdown_data = []
         cumulative_pnl_data = []
+
+        log_closed_positions(closed_positions)
 
         for pos in closed_positions:
             pos_dict = pos.to_dict()
@@ -324,6 +326,65 @@ def _format_plotting(indicators):
 
             plotting.append(new_plot)
     return plotting
+
+def log_closed_positions(closed_positions):
+    if not closed_positions:
+        log.info("No closed positions.")
+        return
+
+    # Wider columns for datetime strings, leave them unformatted
+    header_fmt = (
+        "%-28s %-28s %-28s %-10s "
+        "%-12s %-12s %-12s "
+        "%-10s %-8s %-10s "
+        "%-12s %-12s %-14s"
+    )
+
+    row_fmt = (
+        "%-28s %-28s %-28s %-10s "
+        "%-12.2f %-12.2f %-12.6f "
+        "%-10.2f %-8.2f %-10.2f "
+        "%-12.2f %-12.2f %-14.2f"
+    )
+
+    log.info(
+        header_fmt,
+        "Placed Time",
+        "Entry Time",
+        "Exit Time",
+        "Duration",
+        "Entry Price",
+        "Exit Price",
+        "Quantity",
+        "Gross P&L",
+        "P&L %",
+        "Fees",
+        "Max Run-up",
+        "Max Drawdown",
+        "Cumulative P&L",
+    )
+
+    log.info("-" * 180)
+
+    for pos in closed_positions:
+        log.info(
+            row_fmt,
+            pos.entry_trade.placed_datetime,
+            pos.open_datetime,
+            pos.close_datetime,
+            pos.position_duration_formated,
+            pos.open_market_price,
+            pos.close_market_price,
+            pos.quantity,
+            pos.profit_and_loss,
+            pos.profit_and_loss_percent,
+            pos.fees,
+            pos.run_up,
+            pos.drawdown,
+            pos.cumulative_profit_and_loss,
+        )
+
+
 
 if __name__ == '__main__':
     app.run(debug=True)

@@ -18,7 +18,7 @@ class Order:
         fee_percentage: Decimal,
         creation_timestamp: str,
         limit_price: Decimal = None,
-        allow_limit_adjust: bool = False
+        allow_limit_adjust: bool = True
     ):
         '''Order creation'''
         self.order_number = order_number

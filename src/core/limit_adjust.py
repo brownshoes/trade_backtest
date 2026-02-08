@@ -3,7 +3,8 @@ from log.logger import LOGGER_NAME
 logger = logging.getLogger(LOGGER_NAME)
 
 class LimitAdjust:
-    def __init__(self, limit_order_duration_sec=3600):
+    def __init__(self, mode, limit_order_duration_sec=3600):
+        self.mode = mode
         self.limit_order_duration_sec = limit_order_duration_sec
         logger.info("Limit Adjust set to: " + str(self.limit_order_duration_sec) + " seconds")
 
@@ -55,10 +56,10 @@ class LimitAdjust:
             new_order = buy_strategy.create_buy_order(None, None, exg_state)
             self._modify_new_order(buy_order, new_order, exg_state)
 
-            buy_result = place_buy.place_buy(new_order, exg_state)
+            buy_result = place_buy.place_buy_order(new_order, exg_state)
 
             # Retry on failure (only in live mode)
-            if exg_state.mode == "live" and not buy_result:
+            if self.mode == "live" and not buy_result:
                 logger.error(f"Buy order placement failed for new order {new_order.order_number}. Retrying...")
                 buy_result = place_buy.place_buy_with_retries(new_order, None, None, exg_state, buy_strategy)
 
@@ -95,9 +96,9 @@ class LimitAdjust:
             new_order = sell_strategy.create_sell_order(open_position, None, None, exg_state)
             self._modify_new_order(sell_order, new_order, exg_state)
 
-            sell_result = place_sell.place_sell(new_order, exg_state, open_position)
+            sell_result = place_sell.place_sell_order(new_order, exg_state, open_position)
 
-            if exg_state.mode == "live" and not sell_result:
+            if self.mode == "live" and not sell_result:
                 logger.error(f"Sell  order placement failed for new order {new_order.order_number}. Retrying...")
                 sell_result = place_sell.place_sell_with_retries(new_order, open_position, None, None, exg_state, sell_strategy)
 
@@ -124,11 +125,11 @@ class LimitAdjust:
         new_order.old_limit_order_numbers.append(order.order_number)
 
         # Copy core order metadata
-        new_order.initial_creation_timestamp = order.initial_creation_timestamp
-        new_order.initial_order_buy_sell_price = order.initial_order_buy_sell_price
+        new_order.creation_timestamp = order.creation_timestamp
+        new_order.initial_limit_price = order.initial_limit_price
 
         # Adjust coin amount for partial buy fills
-        if order.order_buy_sell == "BUY" and order.execution_coin_amount is not None:
+        if order.order_side == "BUY" and  order.execution is not None:
             logger.info(
                 f"Buy order {order.order_number} partially filled. Adjusted new order amount: {new_order.quantity:.8f}"
             )
